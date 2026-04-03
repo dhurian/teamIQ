@@ -2,13 +2,14 @@
 blueprints/projects.py
 ───────────────────────
 Project-level CRUD, active-project selection, and import/export.
+Thin HTTP wrapper — all logic lives in services/project_service.py.
 """
-from flask import Blueprint, request, abort
-from models import uid, new_phase
+from flask import Blueprint, request
 from blueprints.shared import (
     load_state, save_projects, save_org, save_active,
-    get_project, normalize_projects, ok, err,
+    get_project, ok, err,
 )
+from services import project_service
 
 bp = Blueprint("projects", __name__)
 
@@ -20,27 +21,12 @@ def api_get_projects():
 
 @bp.route("/api/projects", methods=["POST"])
 def api_add_project():
-    from flask import jsonify
-    state   = load_state()
-    data    = request.get_json() or {}
-    new_id  = "proj_" + uid()
-    team_id = "team_" + uid()
-    proj = {
-        "id":          new_id,
-        "name":        data.get("name", "New Project"),
-        "color":       data.get("color", "#4a9eff"),
-        "selTeamId":   team_id,
-        "selMemberId": None,
-        "orgMode":     "none",
-        "teams": [{"id": team_id, "name": "Team 1", "color": "#4a9eff",
-                   "x": 30, "y": 40, "members": []}],
-        "connections": [],
-        "phases":      [new_phase("Phase 1", 4, "weeks", 60, 60)],
-        "phaseEdges":  [],
-    }
+    state = load_state()
+    data  = request.get_json() or {}
+    proj  = project_service.create_project(data)
     state["projects"].append(proj)
     save_projects(state["projects"])
-    save_active(new_id)
+    save_active(proj["id"])
     return ok({"project": proj})
 
 
@@ -49,10 +35,7 @@ def api_update_project(pid):
     state = load_state()
     proj  = get_project(state["projects"], pid)
     data  = request.get_json() or {}
-    for f in ("name", "color", "selTeamId", "selMemberId", "orgMode",
-              "businessCase", "startDate", "taskEdges"):
-        if f in data:
-            proj[f] = data[f]
+    project_service.update_project(proj, data)
     save_projects(state["projects"])
     return ok({"project": proj})
 
@@ -60,13 +43,16 @@ def api_update_project(pid):
 @bp.route("/api/projects/<pid>", methods=["DELETE"])
 def api_delete_project(pid):
     state = load_state()
-    if not any(p["id"] == pid for p in state["projects"]):
-        abort(404)
-    if len(state["projects"]) <= 1:
-        return err("Must keep at least one project")
-    state["projects"] = [p for p in state["projects"] if p["id"] != pid]
-    if state["activeProjectId"] == pid:
-        save_active(state["projects"][0]["id"])
+    try:
+        new_list, new_active = project_service.delete_project(
+            state["projects"], pid, state["activeProjectId"])
+    except KeyError as e:
+        return err(str(e), 404)
+    except ValueError as e:
+        return err(str(e))
+    state["projects"] = new_list
+    if new_active != state["activeProjectId"]:
+        save_active(new_active)
     save_projects(state["projects"])
     return ok()
 
@@ -85,31 +71,20 @@ def api_set_active():
 
 @bp.route("/api/export")
 def api_export():
-    import datetime
-    state = load_state()
-    return ok({
-        "version":    1,
-        "exportedAt": datetime.datetime.utcnow().isoformat() + "Z",
-        "globalOrg":  state["globalOrg"],
-        "projects":   state["projects"],
-    })
+    state   = load_state()
+    payload = project_service.build_export(state)
+    return ok(payload)
 
 
 @bp.route("/api/import", methods=["POST"])
 def api_import():
-    data     = request.get_json() or {}
-    projects = data.get("projects")
-    org      = data.get("globalOrg")
-    if not projects or not isinstance(projects, list):
-        return err("Invalid export file — missing projects array")
-    state        = load_state()
-    existing_ids = {p["id"] for p in state["projects"]}
-    added        = 0
-    for proj in normalize_projects(projects):
-        if proj.get("id") in existing_ids:
-            proj["id"] = "proj_" + uid()
-        state["projects"].append(proj)
-        added += 1
+    state = load_state()
+    data  = request.get_json() or {}
+    try:
+        merged, org, added = project_service.apply_import(state, data)
+    except ValueError as e:
+        return err(str(e))
+    state["projects"] = merged
     if org:
         state["globalOrg"] = org
         save_org(org)

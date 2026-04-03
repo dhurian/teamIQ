@@ -20,7 +20,12 @@
       "Bash(.venv/bin/pytest --version)",
       "Bash(/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/pip install:*)",
       "Bash(/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/python -m pytest tests/ -v --tb=short)",
-      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest tests/ -v --tb=short)"
+      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest tests/ -v --tb=short)",
+      "Bash(wc -l static/js/*.js)",
+      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest tests/ -q)",
+      "Bash(/Downloads/teamiq/.venv/bin/python -c \":*)",
+      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -c \":*)",
+      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest --tb=short -q)"
     ]
   }
 }

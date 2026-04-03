@@ -7,49 +7,10 @@ circular imports.
 """
 from flask import jsonify, abort
 from db import db_get, db_set
-from models import (
-    all_phases_flat, seed_projects, seed_org, uid,
-)
+from models import seed_projects, seed_org
 
-
-# ── State persistence ─────────────────────────────────────────────────────────
-
-def normalize_projects(projects):
-    """Upgrade older saved project data to the current schema."""
-    if not isinstance(projects, list):
-        return seed_projects()
-
-    for proj in projects:
-        proj.setdefault("phaseEdges", [])
-        proj.setdefault("taskEdges", [])
-        proj.setdefault("teams", [])
-        proj.setdefault("connections", [])
-        proj.setdefault("businessCase", {})
-        proj.setdefault("startDate", None)
-
-        for ph in all_phases_flat(proj.get("phases", [])):
-            ph.setdefault("children", [])
-            ph.setdefault("workPackages", [])
-            ph.setdefault("expanded", True)
-            ph.setdefault("required", {})
-            ph.setdefault("startDateOverride", None)
-            ph.setdefault("endDateOverride", None)
-
-            if "value" not in ph:
-                ph["value"] = float(ph.get("weeks", 2))
-            ph.setdefault("unit", "weeks")
-
-            for wp in ph.get("workPackages", []):
-                wp.setdefault("description", "")
-                wp.setdefault("deliverables", "")
-                wp.setdefault("assignedMembers", [])
-                wp.setdefault("status", "not_started")
-                wp.setdefault("value", 1)
-                wp.setdefault("unit", "weeks")
-                wp.setdefault("startDateOverride", None)
-                wp.setdefault("endDateOverride", None)
-
-    return projects
+# Re-export normalize_projects from the service layer for backward compatibility.
+from services.project_service import normalize_projects  # noqa: F401
 
 
 def load_state():

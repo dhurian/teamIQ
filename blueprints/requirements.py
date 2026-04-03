@@ -2,12 +2,13 @@
 blueprints/requirements.py
 ───────────────────────────
 Project requirements with optional work-package traceability links.
+Thin HTTP wrapper — all logic lives in services/requirement_service.py.
 """
 from flask import Blueprint, request
-from models import uid
 from blueprints.shared import (
     load_state, save_projects, get_project, ok, err,
 )
+from services import requirement_service
 
 bp = Blueprint("requirements", __name__)
 
@@ -17,12 +18,7 @@ def api_add_req(pid):
     state = load_state()
     proj  = get_project(state["projects"], pid)
     data  = request.get_json() or {}
-    req   = {
-        "id":        "req_" + uid(),
-        "text":      data.get("text", ""),
-        "linkedWPs": data.get("linkedWPs", []),
-    }
-    proj.setdefault("requirements", []).append(req)
+    req   = requirement_service.create_requirement(proj, data)
     save_projects(state["projects"])
     return ok({"requirement": req})
 
@@ -31,25 +27,22 @@ def api_add_req(pid):
 def api_update_req(pid, rid):
     state = load_state()
     proj  = get_project(state["projects"], pid)
-    req   = next((r for r in proj.get("requirements", []) if r["id"] == rid), None)
-    if not req:
-        return err("Requirement not found", 404)
-    data = request.get_json() or {}
-    for f in ("text", "linkedWPs"):
-        if f in data:
-            req[f] = data[f]
+    data  = request.get_json() or {}
+    try:
+        req = requirement_service.update_requirement(proj, rid, data)
+    except KeyError as e:
+        return err(str(e), 404)
     save_projects(state["projects"])
     return ok({"requirement": req})
 
 
 @bp.route("/api/projects/<pid>/requirements/<rid>", methods=["DELETE"])
 def api_delete_req(pid, rid):
-    state  = load_state()
-    proj   = get_project(state["projects"], pid)
-    before = len(proj.get("requirements", []))
-    proj["requirements"] = [r for r in proj.get("requirements", [])
-                            if r["id"] != rid]
-    if len(proj.get("requirements", [])) == before:
-        return err("Requirement not found", 404)
+    state = load_state()
+    proj  = get_project(state["projects"], pid)
+    try:
+        requirement_service.delete_requirement(proj, rid)
+    except KeyError as e:
+        return err(str(e), 404)
     save_projects(state["projects"])
     return ok()

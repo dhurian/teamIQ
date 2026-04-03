@@ -40,26 +40,32 @@ def phase_weeks(phase: dict) -> float:
 def new_phase(name="New Phase", value=2, unit="weeks",
               x=60, y=60, required=None) -> dict:
     return {
-        "id":           "ph_" + uid(),
-        "name":         name,
-        "value":        value,
-        "unit":         unit,
-        "x":            x,
-        "y":            y,
-        "required":     required or {},
-        "children":     [],       # subphases (same schema)
-        "workPackages": [],
-        "expanded":     True,
+        "id":                "ph_" + uid(),
+        "name":              name,
+        "value":             value,
+        "unit":              unit,
+        "x":                 x,
+        "y":                 y,
+        "required":          required or {},
+        "children":          [],       # subphases (same schema)
+        "workPackages":      [],
+        "expanded":          True,
+        "startDateOverride": None,
+        "endDateOverride":   None,
     }
 
 def new_work_package(name="New Work Package") -> dict:
     return {
-        "id":               "wp_" + uid(),
-        "name":             name,
-        "description":      "",
-        "deliverables":     [],
-        "assignedMembers":  [],
-        "status":           "not_started",
+        "id":                "wp_" + uid(),
+        "name":              name,
+        "description":       "",
+        "deliverables":      [],
+        "assignedMembers":   [],
+        "status":            "not_started",
+        "value":             1,
+        "unit":              "weeks",
+        "startDateOverride": None,
+        "endDateOverride":   None,
     }
 
 # ── Org hierarchy types ───────────────────────────────────────────────────────

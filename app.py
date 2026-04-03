@@ -15,6 +15,8 @@ from models import (
 )
 app = Flask(__name__)
 
+init_db()
+
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({"ok": False, "error": "Not found"}), 404
@@ -147,7 +149,7 @@ def api_update_project(pid):
     state = load_state()
     proj  = get_project(state["projects"], pid)
     data  = request.get_json() or {}
-    for f in ("name", "color", "selTeamId", "selMemberId", "orgMode", "businessCase", "startDate"):
+    for f in ("name", "color", "selTeamId", "selMemberId", "orgMode", "businessCase", "startDate", "taskEdges"):
         if f in data: proj[f] = data[f]
     save_projects(state["projects"])
     return ok({"project": proj})
@@ -208,6 +210,8 @@ def api_update_phase(pid, phid):
     if "expanded" in data: phase["expanded"] = bool(data["expanded"])
     if "x" in data and data["x"] is not None: phase["x"] = float(data["x"])
     if "y" in data and data["y"] is not None: phase["y"] = float(data["y"])
+    if "startDateOverride" in data: phase["startDateOverride"] = data["startDateOverride"]
+    if "endDateOverride" in data: phase["endDateOverride"] = data["endDateOverride"]
     # backward compat: if old 'weeks' key still coming in
     if "weeks" in data and "value" not in data:
         phase["value"] = float(data["weeks"]); phase["unit"] = "weeks"
@@ -310,10 +314,27 @@ def api_update_wp(pid, wpid):
         wp = next((w for w in ph.get("workPackages", []) if w["id"] == wpid), None)
         if wp:
             data = request.get_json() or {}
-            for f in ("name", "description", "deliverables", "assignedMembers", "status"):
+            for f in ("name", "description", "deliverables", "assignedMembers", "status", "value", "unit", "startDateOverride", "endDateOverride"):
                 if f in data: wp[f] = data[f]
             save_projects(state["projects"])
             return ok({"workPackage": wp})
+    return err("Work package not found", 404)
+
+@app.route("/api/projects/<pid>/work-packages/<wpid>/move", methods=["POST"])
+def api_move_wp(pid, wpid):
+    state     = load_state()
+    proj      = get_project(state["projects"], pid)
+    direction = int((request.get_json() or {}).get("direction", 1))
+    for ph in all_phases_flat(proj["phases"]):
+        lst = ph.get("workPackages", [])
+        wp = next((w for w in lst if w["id"] == wpid), None)
+        if wp:
+            idx = lst.index(wp)
+            to  = idx + direction
+            if 0 <= to < len(lst):
+                lst[idx], lst[to] = lst[to], lst[idx]
+            save_projects(state["projects"])
+            return ok({"workPackages": lst})
     return err("Work package not found", 404)
 
 @app.route("/api/projects/<pid>/work-packages/<wpid>", methods=["DELETE"])
@@ -594,13 +615,21 @@ def api_import():
             proj["id"] = "proj_" + uid()   # re-ID to avoid collision
         # Ensure new schema fields exist
         proj.setdefault("phaseEdges", [])
+        proj.setdefault("taskEdges", [])
         for ph in all_phases_flat(proj.get("phases", [])):
             ph.setdefault("children", [])
             ph.setdefault("workPackages", [])
             ph.setdefault("expanded", True)
+            ph.setdefault("startDateOverride", None)
+            ph.setdefault("endDateOverride", None)
             if "value" not in ph:
                 ph["value"] = float(ph.get("weeks", 2))
                 ph["unit"]  = "weeks"
+            for wp in ph.get("workPackages", []):
+                wp.setdefault("value", 1)
+                wp.setdefault("unit", "weeks")
+                wp.setdefault("startDateOverride", None)
+                wp.setdefault("endDateOverride", None)
         state["projects"].append(proj)
         added += 1
     if org:

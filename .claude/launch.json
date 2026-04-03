@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "TeamIQ Dev (Flask)",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/Users/dhurianvitoldas/Documents/Development/teamiq/app.py"],
+      "port": 8080,
+      "env": {
+        "FLASK_ENV": "development",
+        "PORT": "8080"
+      },
+      "cwd": "/Users/dhurianvitoldas/Documents/Development/teamiq"
+    },
+    {
+      "name": "TeamIQ Prod (Gunicorn)",
+      "runtimeExecutable": "/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/gunicorn",
+      "runtimeArgs": ["app:app", "--workers", "2", "--bind", "0.0.0.0:8081", "--chdir", "/Users/dhurianvitoldas/Documents/Development/teamiq"],
+      "port": 8081,
+      "env": {
+        "FLASK_ENV": "production",
+        "PORT": "8081"
+      },
+      "cwd": "/Users/dhurianvitoldas/Documents/Development/teamiq",
+      "_note": "Gunicorn is Render-only. Install with: pip3 install gunicorn"
+    }
+  ]
+}

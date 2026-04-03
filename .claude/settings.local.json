@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(cp /Users/dhurianvitoldas/Documents/Development/teamiq/models.py /Users/dhurianvitoldas/Downloads/teamiq/models.py)",
-      "Bash(cp /Users/dhurianvitoldas/Documents/Development/teamiq/app.py /Users/dhurianvitoldas/Downloads/teamiq/app.py)"
+      "Bash(cp /Users/dhurianvitoldas/Documents/Development/teamiq/app.py /Users/dhurianvitoldas/Downloads/teamiq/app.py)",
+      "Bash(ls -lh /Users/dhurianvitoldas/Documents/Development/teamiq/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/templates/*.html /Users/dhurianvitoldas/Documents/Development/teamiq/static/pwa/*.js)",
+      "Bash(find /Users/dhurianvitoldas/Documents/Development/teamiq -maxdepth 1 -type f -name *.py)",
+      "Bash(find /Users/dhurianvitoldas/Downloads/teamiq -maxdepth 1 -type f -name *.py)",
+      "Bash(grep -r \"PORT\\\\|port\\\\|listen\" /Users/dhurianvitoldas/Documents/Development/teamiq/*.py)",
+      "Bash(grep -r \"blueprint\\\\|Blueprint\" /Users/dhurianvitoldas/Documents/Development/teamiq/*.py)",
+      "Bash(sqlite3 /Users/dhurianvitoldas/Documents/Development/teamiq/teamiq.db .schema)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(pip3 show:*)",
+      "Bash(python3 -m gunicorn --version)",
+      "Bash(gunicorn --version)",
+      "Bash(pip3 list:*)",
+      "Bash(python3 -c \"import gunicorn; print\\(gunicorn.__file__\\)\")",
+      "Bash(/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/pip show:*)",
+      "Bash(.venv/bin/pip install:*)",
+      "Bash(.venv/bin/pytest --version)",
+      "Bash(/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/pip install:*)",
+      "Bash(/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/python -m pytest tests/ -v --tb=short)",
+      "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest tests/ -v --tb=short)"
     ]
   }
 }

@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TeamIQ</title>
+<meta name="theme-color" content="#1fb885">
+<meta name="description" content="Multi-project team skill gap analysis with Monte Carlo simulation">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TeamIQ">
+<link rel="icon" href="/favicon.ico" type="image/x-icon">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/static/pwa/icons/icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;--bg4:#252d3d;
+  --border:#2e3a50;--border2:#3a4a62;
+  --text:#e8eaf0;--muted:#8893a8;--faint:#4a556a;
+  --teal:#1fb885;--teal2:#0d7a57;--amber:#f0a030;--red:#e05050;--blue:#4a9eff;
+  --font:'Segoe UI',system-ui,sans-serif;--mono:'Consolas','SF Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;}
+.sidebar-logo{padding:1.1rem 1.25rem .9rem;border-bottom:1px solid var(--border);flex-shrink:0;}
+.brand{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--teal);text-transform:uppercase;}
+.sub-brand{font-size:11px;color:var(--faint);margin-top:2px;}
+.sidebar-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.proj-section{padding:.75rem 1rem .5rem;border-bottom:1px solid var(--border);}
+.proj-section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.sec-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
+.proj-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;border:1px solid transparent;transition:all .15s;margin-bottom:2px;}
+.proj-item:hover{background:var(--bg3);}
+.proj-item.active-proj{background:var(--bg3);border-color:var(--border);}
+.proj-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.proj-name{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.proj-meta{font-size:10px;color:var(--faint);}
+.proj-del{opacity:0;font-size:11px;padding:1px 5px;border:1px solid transparent;color:var(--red);background:transparent;cursor:pointer;border-radius:3px;transition:opacity .1s;}
+.proj-item:hover .proj-del{opacity:1;border-color:rgba(224,80,80,.3);}
+.nav-section{padding:.5rem 0;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 1.25rem;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all .15s;user-select:none;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{color:var(--teal);border-left-color:var(--teal);background:rgba(31,184,133,.08);}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.nav-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;padding:10px 1.25rem 4px;}
+.main{padding:2rem;max-width:1350px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem;}
+.metric{background:var(--bg3);border-radius:8px;padding:1rem 1.25rem;}
+.metric label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;}
+.metric .val{font-size:26px;font-weight:700;line-height:1;font-family:var(--mono);}
+.metric .sub{font-size:11px;color:var(--faint);margin-top:4px;}
+h2{font-size:18px;font-weight:600;margin-bottom:1.25rem;}
+h3{font-size:11px;font-weight:600;margin-bottom:.75rem;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;}
+.panel{display:none;}.panel.active{display:block;}
+button,input,select{font-family:var(--font);}
+.btn{background:var(--bg4);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;}
+.btn:hover{border-color:var(--teal);color:var(--teal);}
+.btn-primary{background:var(--teal2);border-color:var(--teal);color:#fff;}
+.btn-primary:hover{background:var(--teal);}
+.btn-danger{border-color:#c04040;color:#e06060;background:transparent;}
+.btn-danger:hover{background:rgba(224,80,80,.1);}
+.btn-active{background:rgba(74,158,255,.15);border-color:var(--blue);color:var(--blue);}
+.btn-sm{padding:3px 9px;font-size:11px;}
+input[type=text],input[type=number]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;font-size:13px;outline:none;}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--teal);}
+input[type=range]{flex:1;height:3px;accent-color:var(--teal);cursor:pointer;}
+select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;font-size:12px;cursor:pointer;outline:none;}
+.sep{height:1px;background:var(--border);margin:1.25rem 0;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.flex-ac{display:flex;align-items:center;gap:8px;}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:1.5rem;}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.mb15{margin-bottom:1.5rem;}.mb1{margin-bottom:1rem;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{font-size:11px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.05em;padding:6px 10px 10px;border-bottom:1px solid var(--border);text-align:left;}
+th.c{text-align:center;}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+td.c{text-align:center;}
+tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;font-weight:600;}
+.b-ok{background:rgba(31,184,133,.15);color:var(--teal);}
+.b-med{background:rgba(240,160,48,.15);color:var(--amber);}
+.b-high{background:rgba(224,80,80,.15);color:var(--red);}
+.gap-bar-wrap{height:5px;border-radius:3px;background:var(--bg4);overflow:hidden;flex:1;}
+.gap-fill{height:100%;border-radius:3px;}
+.avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.member-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;border:1px solid transparent;transition:all .15s;}
+.member-item:hover{background:var(--bg3);}
+.member-item.sel{background:var(--bg3);border-color:var(--border);}
+.org-tag{font-size:10px;padding:1px 6px;border-radius:3px;background:rgba(31,184,133,.12);color:var(--teal);border:1px solid rgba(31,184,133,.25);flex-shrink:0;}
+.phase-bar{height:28px;background:var(--bg3);border-radius:6px;overflow:hidden;display:flex;margin-bottom:1.25rem;}
+.phase-seg{display:flex;align-items:center;justify-content:center;overflow:hidden;border-right:1px solid var(--bg);}
+.phase-seg span{font-size:10px;font-weight:600;padding:0 6px;white-space:nowrap;}
+.phase-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;margin-bottom:12px;border-left:3px solid;}
+.skill-toggle{display:inline-block;font-size:11px;padding:3px 9px;border-radius:5px;border:1px solid var(--border);cursor:pointer;margin:3px;color:var(--muted);background:transparent;transition:all .12s;}
+.skill-toggle.on{font-weight:600;}
+.skill-row{display:grid;grid-template-columns:120px 1fr 44px;align-items:center;gap:10px;margin-bottom:10px;}
+.skill-label{font-size:12px;color:var(--muted);}
+.slider-line{display:flex;align-items:center;gap:6px;}
+.slider-hint{font-size:10px;color:var(--faint);width:32px;}
+.skill-val{font-size:13px;font-weight:700;text-align:right;font-family:var(--mono);}
+.timeline-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px;}
+.timeline-line{width:1px;flex:1;background:var(--border);margin-top:4px;}
+.tree-node{padding-left:20px;}
+.tree-node-root{padding-left:0;}
+.tree-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:7px;cursor:pointer;border:1px solid transparent;transition:all .12s;margin-bottom:2px;}
+.tree-row:hover{background:var(--bg3);}
+.tree-row.sel{background:var(--bg3);border-color:var(--border);}
+.tree-toggle{width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--faint);cursor:pointer;flex-shrink:0;border-radius:3px;}
+.tree-toggle:hover{background:var(--bg4);}
+.tree-icon{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.tree-label{font-size:13px;font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tree-sublabel{font-size:11px;color:var(--faint);}
+.node-actions{display:flex;gap:3px;opacity:0;transition:opacity .1s;}
+.tree-row:hover .node-actions{opacity:1;}
+#orgMapSvg{width:100%;background:var(--bg3);border-radius:10px;border:1px solid var(--border);cursor:grab;display:block;}
+.project-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.project-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--proj-color,#4a9eff);}
+.project-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.project-card.active-card{border-color:var(--proj-color,#4a9eff);}
+.import-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:center;justify-content:center;}
+.import-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;width:640px;max-height:80vh;display:flex;flex-direction:column;}
+.import-header{padding:1.25rem 1.5rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.import-body{flex:1;overflow-y:auto;padding:1rem 1.5rem;}
+.import-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.pick-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background .1s;}
+.pick-row:hover{background:var(--bg3);}
+.pick-row input[type=checkbox]{accent-color:var(--teal);width:14px;height:14px;cursor:pointer;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="brand">TeamIQ</div>
+      <div class="sub-brand">Multi-Project Analyzer</div>
+    </div>
+    <div class="sidebar-body">
+      <div class="proj-section" id="sidebarProjects"></div>
+      <div class="nav-section">
+        <div class="nav-group-label">Global</div>
+        <div class="nav-item" onclick="setTab('overview')"><span class="nav-icon">🏠</span>Overview</div>
+        <div class="nav-item" onclick="setTab('orghier')"><span class="nav-icon">🏢</span>Organization</div>
+        <div class="nav-group-label" id="projTabsLabel" style="margin-top:6px;">Current Project</div>
+        <div class="nav-item" onclick="setTab('teams')"><span class="nav-icon">👥</span>Teams</div>
+        <div class="nav-item" onclick="setTab('phases')"><span class="nav-icon">📋</span>Phases</div>
+        <div class="nav-item" onclick="setTab('orgchart')"><span class="nav-icon">🔗</span>Org Chart</div>
+        <div class="nav-item" onclick="setTab('analysis')"><span class="nav-icon">📊</span>Analysis</div>
+      </div>
+    </div>
+  </nav>
+  <main class="main">
+    <div id="panelOverview"  class="panel active"></div>
+    <div id="panelOrgHier"   class="panel"></div>
+    <div id="panelTeams"     class="panel"></div>
+    <div id="panelPhases"    class="panel"></div>
+    <div id="panelOrgchart"  class="panel"></div>
+    <div id="panelAnalysis"  class="panel"></div>
+  </main>
+</div>
+<div id="importOverlay" style="display:none;"></div>
+
+<script>
+// ── Python-provided constants (injected at render time) ────────────────────
+const ALL_SKILLS   = {{ all_skills | tojson }};
+const TECH_SKILLS  = {{ tech_skills | tojson }};
+const PERS_SKILLS  = {{ pers_skills | tojson }};
+const ORG_TYPE_ICON  = {{ org_type_icon | safe }};
+const ORG_TYPE_COLOR = {{ org_type_color | safe }};
+const ORG_CHILD_TYPES= {{ org_child_types | safe }};
+
+const PCOLS  = ['#4a9eff','#1fb885','#9b7ee8','#f0a030'];
+const TCOLS  = ['#4a9eff','#1fb885','#9b7ee8','#f0a030','#e05050','#e87e5e','#50c8c8','#d4537e','#a0b840'];
+const PROJ_COLORS = ['#4a9eff','#1fb885','#9b7ee8','#f0a030','#e87e5e','#50c8c8'];
+const NODE_W = 175, NODE_H = 92;
+
+// ── Local UI state (no computation here – Python owns all data) ────────────
+let S = {};          // full state mirror from /api/state
+let activeTab = 'overview';
+let orgHierView = 'map';
+let orgMapPan = {x:60,y:50}, orgMapZoom = 1, orgMapDragging = null, orgMapSelId = null;
+let orgNodeDrag = null, orgConnFrom = null;
+let charts = {};
+let importChecked = new Set();
+
+// ── API helpers ────────────────────────────────────────────────────────────
+async function api(method, path, body){
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  return r.json();
+}
+const GET    = p       => api('GET',    p);
+const POST   = (p, b)  => api('POST',   p, b);
+const PATCH  = (p, b)  => api('PATCH',  p, b);
+const DELETE = p       => api('DELETE', p);
+
+async function loadState(){
+  S = await GET('/api/state');
+  renderSidebar();
+}
+
+// ── Colour helpers ─────────────────────────────────────────────────────────
+const ini    = n => n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const spCol  = p => p>=.75?'#1fb885':p>=.5?'#f0a030':'#e05050';
+const scv    = v => v>=7?'#1fb885':v>=4?'#f0a030':'#e05050';
+const tCol   = t => ({integration:'#4a9eff',dependency:'#f0a030',handoff:'#1fb885',reporting:'#9b7ee8'})[t]||'#4a9eff';
+
+function ap(){ return S.projects?.find(p=>p.id===S.activeProjectId)||S.projects?.[0]; }
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+function renderSidebar(){
+  const projects = S.projects||[];
+  const active   = S.activeProjectId;
+  document.getElementById('sidebarProjects').innerHTML = `
+    <div class="proj-section-head">
+      <span class="sec-label">Projects (${projects.length})</span>
+      <button class="btn btn-primary" style="font-size:10px;padding:3px 8px;" onclick="addProject()">+ New</button>
+    </div>
+    ${projects.map(p=>`
+      <div class="proj-item ${p.id===active?'active-proj':''}" onclick="switchProject('${p.id}')">
+        <div class="proj-dot" style="background:${p.color};box-shadow:0 0 5px ${p.color}66;"></div>
+        <div style="min-width:0;flex:1;">
+          <div class="proj-name">${p.name}</div>
+          <div class="proj-meta">${p.teams.length} teams · ${p.phases.length} phases</div>
+        </div>
+        ${projects.length>1?`<button class="proj-del" onclick="event.stopPropagation();delProject('${p.id}')">✕</button>`:''}
+      </div>`).join('')}`;
+  const proj = ap();
+  const lbl  = document.getElementById('projTabsLabel');
+  if(lbl){ lbl.textContent = proj?.name||'Current Project'; lbl.style.color = proj?.color||'var(--faint)'; }
+}
+
+// ── Tab routing ────────────────────────────────────────────────────────────
+function setTab(tab){
+  activeTab = tab;
+  const labels = {overview:'Overview',orghier:'Organization',teams:'Teams',phases:'Phases',orgchart:'Org Chart',analysis:'Analysis'};
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.textContent.trim()===labels[tab]));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const pm = {overview:'panelOverview',orghier:'panelOrgHier',teams:'panelTeams',phases:'panelPhases',orgchart:'panelOrgchart',analysis:'panelAnalysis'};
+  document.getElementById(pm[tab])?.classList.add('active');
+  rerender(tab);
+}
+
+function rerender(tab){
+  const t = tab||activeTab;
+  if(t==='overview')  renderOverview();
+  else if(t==='orghier')  renderOrgHier();
+  else if(t==='teams')    renderTeams();
+  else if(t==='phases')   renderPhases();
+  else if(t==='orgchart') renderOrgChart();
+  else if(t==='analysis') renderAnalysis();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OVERVIEW
+// ════════════════════════════════════════════════════════════════════════════
+async function renderOverview(){
+  const projects = S.projects||[];
+  document.getElementById('panelOverview').innerHTML = `
+    <div class="flex-between mb15">
+      <div><h2 style="margin:0 0 4px;">Portfolio Overview</h2>
+        <div style="font-size:12px;color:var(--muted);">${projects.length} projects · loading analysis… <span class="spinner"></span></div></div>
+      <div class="flex-ac">
+        <button class="btn" onclick="setTab('orghier')">🏢 Organization</button>
+        <button class="btn btn-primary" onclick="addProject()">+ New Project</button>
+      </div>
+    </div>
+    <div id="overviewCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:1.5rem;">
+      ${projects.map(p=>`<div class="project-card" style="--proj-color:${p.color};min-height:120px;"></div>`).join('')}
+    </div>
+    <div class="card"><h3>Cross-project skill availability</h3>
+      <div style="position:relative;height:280px;"><canvas id="crossChart"></canvas></div></div>`;
+
+  const simRes = await POST('/api/simulate/portfolio');
+  const cards = projects.map(p=>{
+    const r   = simRes[p.id]||{};
+    const pct = Math.round((r.overall_prob||0)*100);
+    const hc  = spCol(r.overall_prob||0);
+    const tw  = p.phases.reduce((a,ph)=>a+ph.weeks,0);
+    const allM= p.teams.flatMap(t=>t.members);
+    const maxReq={};
+    p.phases.forEach(ph=>Object.entries(ph.required||{}).forEach(([sk,lv])=>{if(!maxReq[sk]||maxReq[sk]<lv)maxReq[sk]=lv;}));
+    const crit=Object.entries(maxReq).filter(([sk,req])=>(r.team_exp?.[sk]||0)<req*.85).length;
+    const linked=allM.filter(m=>m.orgId).length;
+    return `<div class="project-card ${p.id===S.activeProjectId?'active-card':''}" style="--proj-color:${p.color};" onclick="switchProject('${p.id}');setTab('analysis')">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;margin-top:4px;">
+        <div><div style="font-size:15px;font-weight:700;">${p.name}</div>
+          <div style="font-size:11px;color:var(--faint);margin-top:3px;">${allM.length} people · ${p.teams.length} teams · ${tw}w</div></div>
+        <div style="text-align:right;"><div style="font-size:24px;font-weight:700;font-family:var(--mono);color:${hc};">${pct}%</div>
+          <div style="font-size:10px;color:var(--faint);">success prob.</div></div>
+      </div>
+      <div style="height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:12px;">
+        <div style="height:100%;width:${pct}%;background:${hc};border-radius:3px;"></div></div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;">
+        ${p.teams.map(t=>`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${t.color}18;color:${t.color};font-weight:600;">${t.name}</span>`).join('')}
+      </div>
+      <div style="display:flex;gap:16px;">
+        <div><div style="font-size:10px;color:var(--faint);">Critical gaps</div><div style="font-size:13px;font-weight:700;color:${crit>0?'#e05050':'#1fb885'};">${crit}</div></div>
+        <div><div style="font-size:10px;color:var(--faint);">Interfaces</div><div style="font-size:13px;font-weight:700;">${p.connections.length}</div></div>
+        <div><div style="font-size:10px;color:var(--faint);">From org</div><div style="font-size:13px;font-weight:700;color:var(--teal);">${linked}</div></div>
+      </div></div>`;
+  }).join('');
+  document.getElementById('overviewCards').innerHTML=cards;
+
+  // Cross-project skill chart
+  const skSet=new Set();
+  projects.forEach(p=>p.phases.forEach(ph=>Object.keys(ph.required||{}).forEach(sk=>skSet.add(sk))));
+  const skArr=[...skSet].slice(0,10);
+  dc('crossChart');
+  const cc=document.getElementById('crossChart');
+  if(cc&&skArr.length){
+    charts.crossChart=new Chart(cc,{type:'bar',data:{labels:skArr,datasets:projects.map(p=>({
+      label:p.name,
+      data:skArr.map(sk=>parseFloat(((simRes[p.id]?.team_exp?.[sk])||0).toFixed(2))),
+      backgroundColor:p.color+'66',borderColor:p.color,borderWidth:1,borderRadius:3
+    }))},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8893a8',font:{size:11}}}},
+      scales:{x:{min:0,max:10,grid:{color:'#ffffff08'},ticks:{color:'#8893a8',font:{size:11}}},
+              y:{grid:{display:false},ticks:{color:'#8893a8',font:{size:11}}}}}});
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ORG HIERARCHY
+// ════════════════════════════════════════════════════════════════════════════
+const ND={org:{w:200,h:62},division:{w:178,h:58},department:{w:162,h:54},team:{w:152,h:52},person:{w:142,h:62}};
+const V_GAP=70,H_GAP=22;
+function ndim(t){return ND[t]||{w:152,h:52};}
+
+function computeLayout(node,depth=0){
+  const d=ndim(node.type);node._depth=depth;
+  if(!node.children?.length||!node.expanded){node._w=d.w;return d.w;}
+  let total=0;node.children.forEach(c=>{total+=computeLayout(c,depth+1)+H_GAP;});total-=H_GAP;
+  node._w=Math.max(d.w,total);return node._w;
+}
+function placeLayout(node,x=0){
+  const d=ndim(node.type);node._x=x+(node._w-d.w)/2;node._y=node._depth*(80+V_GAP);
+  if(node.children?.length&&node.expanded){let cx=x;node.children.forEach(c=>{placeLayout(c,cx);cx+=c._w+H_GAP;});}
+}
+
+function renderOrgHier(){
+  const org=S.globalOrg;
+  if(!org)return;
+  const totalP=flatPersons(org).length;
+  document.getElementById('panelOrgHier').innerHTML=`
+    <div class="flex-between mb15">
+      <div><h2 style="margin:0 0 4px;">Organization</h2>
+        <div style="font-size:12px;color:var(--muted);">${totalP} people · reusable across all projects</div></div>
+      <div class="flex-ac">
+        <button class="btn ${orgHierView==='map'?'btn-active':''}" onclick="orgHierView='map';renderOrgHier()">🗺 Map</button>
+        <button class="btn ${orgHierView==='tree'?'btn-active':''}" onclick="orgHierView='tree';renderOrgHier()">🌲 Tree</button>
+        <button class="btn btn-primary btn-sm" onclick="addOrgChild('${org.id}')">+ Add Division</button>
+      </div>
+    </div>
+    ${orgHierView==='map' ? buildOrgMap(org) : buildOrgTreePanel(org)}`;
+  if(orgHierView==='map') initOrgMapEvents();
+}
+
+function flatPersons(node,acc=[]){
+  if(!node)return acc;
+  if(node.type==='person')acc.push(node);
+  (node.children||[]).forEach(c=>flatPersons(c,acc));
+  return acc;
+}
+function flatPersonsUnder(node){
+  if(!node)return[];
+  if(node.type==='person')return[node];
+  return(node.children||[]).flatMap(c=>flatPersonsUnder(c));
+}
+function findNode(node,id){
+  if(!node)return null;
+  if(node.id===id)return node;
+  for(const c of(node.children||[])){const f=findNode(c,id);if(f)return f;}
+  return null;
+}
+
+function buildOrgMap(org){
+  computeLayout(org); placeLayout(org);
+  let edges='',nodes='';
+  function walk(node){
+    const d=ndim(node.type),col=ORG_TYPE_COLOR[node.type]||'#888';
+    const isSel=node.id===orgMapSelId;
+    const px=node._x,py=node._y,pw=d.w,ph=d.h,cx=px+pw/2;
+    if(node.children?.length&&node.expanded){
+      node.children.forEach(c=>{
+        const cd=ndim(c.type),ccx=c._x+cd.w/2,my=(py+ph+c._y)/2;
+        edges+=`<path d="M${cx},${py+ph} C${cx},${my} ${ccx},${my} ${ccx},${c._y}" stroke="${col}55" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+        walk(c);
+      });
+    }
+    const persons=flatPersonsUnder(node);
+    let inner='';
+    if(node.type==='person'){
+      const topSk=ALL_SKILLS.reduce((a,sk)=>((node.skills?.[sk]?.m||0)>(node.skills?.[a]?.m||0)?sk:a),ALL_SKILLS[0]);
+      const ts=node.skills?.[topSk]?.m||0;
+      inner=`<circle cx="${px+22}" cy="${py+ph/2}" r="14" fill="${col}22" stroke="${col}44" stroke-width="1"/>
+        <text x="${px+22}" y="${py+ph/2+4}" text-anchor="middle" fill="${col}" font-size="10" font-weight="700" font-family="Segoe UI,system-ui">${ini(node.name)}</text>
+        <text x="${px+42}" y="${py+16}" fill="${col}" font-size="10" font-weight="700" font-family="Segoe UI,system-ui">${node.name.length>14?node.name.slice(0,13)+'…':node.name}</text>
+        <text x="${px+42}" y="${py+28}" fill="#4a556a" font-size="9" font-family="Segoe UI,system-ui">${(node.role||'').slice(0,16)}</text>
+        <rect x="${px+42}" y="${py+35}" width="${pw-50}" height="4" rx="2" fill="${col}22"/>
+        <rect x="${px+42}" y="${py+35}" width="${Math.round(ts/10*(pw-50))}" height="4" rx="2" fill="${scv(ts)}88"/>`;
+    } else {
+      const sub=node.type==='org'?`${persons.length} people`
+               :node.type==='division'?`${(node.children||[]).length} depts · ${persons.length}p`
+               :node.type==='department'?`${(node.children||[]).length} teams · ${persons.length}p`
+               :`${persons.length} member${persons.length!==1?'s':''}`;
+      inner=`<rect x="${px}" y="${py}" width="${pw}" height="5" rx="3" fill="${col}"/>
+        <rect x="${px}" y="${py+2}" width="${pw}" height="3" fill="${col}"/>
+        <text x="${px+12}" y="${py+22}" fill="${col}" font-size="11" font-weight="700" font-family="Segoe UI,system-ui">${node.name.length>20?node.name.slice(0,19)+'…':node.name}</text>
+        <text x="${px+12}" y="${py+37}" fill="#4a556a" font-size="9" font-family="Segoe UI,system-ui">${sub}</text>`;
+    }
+    const hasKids=node.children?.length>0;
+    const toggle=hasKids?`<g onclick="toggleOrgNode('${node.id}')" style="cursor:pointer;">
+      <circle cx="${cx}" cy="${py+ph}" r="8" fill="#1e2535" stroke="${col}66" stroke-width="1"/>
+      <text x="${cx}" y="${py+ph+4}" text-anchor="middle" fill="${col}" font-size="10" font-family="Segoe UI,system-ui">${node.expanded?'−':'+'}</text>
+    </g>`:'';
+    nodes+=`<g class="omap-node" data-id="${node.id}" style="cursor:pointer;" onclick="orgMapSelect('${node.id}')">
+      <rect x="${px}" y="${py}" width="${pw}" height="${ph}" rx="8"
+        fill="${isSel?col+'25':'#1e2535'}" stroke="${isSel?col:col+'44'}" stroke-width="${isSel?2:1}"
+        ${isSel?`filter="drop-shadow(0 0 10px ${col}55)"`:''}/>
+      ${inner}</g>${toggle}`;
+  }
+  walk(org);
+  let maxX=0,maxY=0;
+  function measure(n){const d=ndim(n.type);maxX=Math.max(maxX,n._x+d.w+60);maxY=Math.max(maxY,n._y+d.h+80);if(n.children?.length&&n.expanded)n.children.forEach(measure);}
+  measure(org);
+
+  const sel=orgMapSelId?findNode(org,orgMapSelId):null;
+  return`<div style="display:grid;grid-template-columns:1fr ${sel?'310px':'0px'};gap:${sel?'14px':'0'};transition:grid-template-columns .2s;align-items:start;">
+    <div style="position:relative;">
+      <div style="position:absolute;top:10px;right:10px;z-index:2;display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="orgMapZoom=Math.min(2.2,orgMapZoom+.15);updateMapTransform()" title="Zoom in">+</button>
+        <button class="btn btn-sm" onclick="orgMapZoom=Math.max(.25,orgMapZoom-.15);updateMapTransform()" title="Zoom out">−</button>
+        <button class="btn btn-sm" onclick="orgMapPan={x:60,y:50};orgMapZoom=1;updateMapTransform()" title="Reset">⊙</button>
+      </div>
+      <svg id="orgMapSvg" width="100%" height="580">
+        <g id="orgMapG" transform="translate(${orgMapPan.x},${orgMapPan.y}) scale(${orgMapZoom})">
+          <g>${edges}</g><g>${nodes}</g>
+        </g>
+      </svg>
+      <div style="font-size:11px;color:var(--faint);margin-top:6px;padding-left:4px;">Scroll to zoom · Drag to pan · Click node to inspect · ± to collapse</div>
+    </div>
+    ${sel?`<div>${buildOrgDetail(sel)}</div>`:'<div></div>'}
+  </div>`;
+}
+
+function buildOrgDetail(node){
+  const col=ORG_TYPE_COLOR[node.type]||'#888';
+  const persons=flatPersonsUnder(node);
+  const canAdd=(ORG_CHILD_TYPES[node.type]||[]).length>0;
+  const isRoot=node.id===S.globalOrg?.id;
+  let body=`<div class="card" style="position:sticky;top:0;">
+    <div class="flex-between" style="margin-bottom:12px;">
+      <div class="flex-ac">
+        <div style="width:34px;height:34px;border-radius:8px;background:${col}18;color:${col};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${ORG_TYPE_ICON[node.type]||'●'}</div>
+        <div>
+          <input type="text" value="${node.name}" onchange="patchOrgNode('${node.id}',{name:this.value})" style="font-size:14px;font-weight:700;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:2px 0;width:175px;outline:none;">
+          <div style="font-size:11px;color:${col};margin-top:2px;">${node.type}</div>
+        </div>
+      </div>
+      <button class="btn btn-sm" onclick="orgMapSelId=null;renderOrgHier()" style="padding:3px 7px;">✕</button>
+    </div>`;
+  if(node.type==='person'){
+    const top5=ALL_SKILLS.map(sk=>({sk,v:node.skills?.[sk]?.m||0})).sort((a,b)=>b.v-a.v).slice(0,5);
+    body+=`<input type="text" value="${node.role||''}" placeholder="Role" onchange="patchOrgNode('${node.id}',{role:this.value})" style="font-size:12px;color:var(--muted);background:transparent;border:none;border-bottom:1px solid var(--border);padding:2px 0;width:100%;outline:none;margin-bottom:10px;">
+    <h3 style="margin-bottom:8px;">Top skills</h3>
+    ${top5.map(({sk,v})=>`<div class="flex-ac" style="margin-bottom:7px;">
+      <span style="font-size:11px;color:var(--muted);width:95px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sk}</span>
+      <div class="gap-bar-wrap"><div class="gap-fill" style="width:${v*10}%;background:${scv(v)};"></div></div>
+      <span style="font-size:11px;font-weight:700;font-family:var(--mono);color:${scv(v)};min-width:24px;">${v.toFixed(1)}</span>
+    </div>`).join('')}
+    <div class="sep" style="margin:.75rem 0;"></div>
+    <button class="btn btn-sm" onclick="orgHierView='tree';orgMapSelId='${node.id}';renderOrgHier()" style="width:100%;">✏️ Edit all skills</button>`;
+  } else {
+    body+=`<div style="display:flex;gap:10px;margin-bottom:10px;">
+      <div class="metric" style="flex:1;padding:.7rem;"><label>People</label><div class="val" style="font-size:20px;">${persons.length}</div></div>
+      ${(node.children?.length)?`<div class="metric" style="flex:1;padding:.7rem;"><label>${(ORG_CHILD_TYPES[node.type]||[''])[0]}s</label><div class="val" style="font-size:20px;">${node.children.length}</div></div>`:''}
+    </div>`;
+    if(persons.length){
+      body+=`<h3 style="margin-bottom:7px;">People</h3><div style="max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;">
+        ${persons.map(p=>`<div class="flex-ac" style="padding:5px 8px;background:var(--bg3);border-radius:6px;cursor:pointer;" onclick="orgMapSelId='${p.id}';renderOrgHier()">
+          <div class="avatar" style="width:26px;height:26px;background:${ORG_TYPE_COLOR.team}18;color:${ORG_TYPE_COLOR.team};font-size:10px;">${ini(p.name)}</div>
+          <div style="min-width:0;"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</div>
+          <div style="font-size:10px;color:var(--faint);">${p.role||''}</div></div></div>`).join('')}
+      </div>`;
+    }
+  }
+  if(canAdd)body+=`<div class="sep" style="margin:.75rem 0;"></div><button class="btn btn-primary btn-sm" onclick="addOrgChild('${node.id}')" style="width:100%;">+ Add ${(ORG_CHILD_TYPES[node.type]||[''])[0]}</button>`;
+  if(!isRoot)body+=`<button class="btn btn-danger btn-sm" onclick="deleteOrgNode('${node.id}')" style="width:100%;margin-top:6px;">Delete ${node.type}</button>`;
+  return body+'</div>';
+}
+
+function buildOrgTreePanel(org){
+  const selId=orgMapSelId;
+  const selNode=selId?findNode(org,selId):org;
+  function treeNode(node,isRoot=false){
+    const col=ORG_TYPE_COLOR[node.type]||'#888';
+    const hasCh=node.children?.length>0;
+    const isSel=node.id===selId;
+    const canAdd=(ORG_CHILD_TYPES[node.type]||[]).length>0;
+    const persons=flatPersonsUnder(node);
+    return`<div class="${isRoot?'tree-node-root':'tree-node'}">
+      <div class="tree-row ${isSel?'sel':''}" onclick="orgMapSelId='${node.id}';renderOrgHier()">
+        <div class="tree-toggle" onclick="event.stopPropagation();toggleOrgNode('${node.id}')">${hasCh?(node.expanded?'▾':'▸'):'&nbsp;'}</div>
+        <div class="tree-icon" style="background:${col}18;color:${col};">${ORG_TYPE_ICON[node.type]||'●'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="tree-label">${node.name}</div>
+          <div class="tree-sublabel">${node.type==='person'?(node.role||''):persons.length+' people'}</div>
+        </div>
+        <div class="node-actions">
+          ${canAdd?`<button class="btn btn-sm" onclick="event.stopPropagation();addOrgChild('${node.id}')">+</button>`:''}
+          ${!isRoot?`<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteOrgNode('${node.id}')">✕</button>`:''}
+        </div>
+      </div>
+      ${node.expanded&&hasCh?`<div>${node.children.map(c=>treeNode(c)).join('')}</div>`:''}
+    </div>`;
+  }
+  const editorHtml=selNode?buildOrgEditor(selNode):`<div style="color:var(--faint);font-size:13px;padding:2rem;text-align:center;">← Select a node to edit</div>`;
+  return`<div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;">
+    <div class="card" style="padding:1rem;">
+      <div class="flex-between" style="margin-bottom:10px;">
+        <h3 style="margin:0;">Structure</h3>
+        <button class="btn btn-primary btn-sm" onclick="addOrgChild('${org.id}')">+ Division</button>
+      </div>
+      <div class="tree-node-root">${treeNode(org,true)}</div>
+    </div>
+    <div>${editorHtml}</div>
+  </div>`;
+}
+
+function buildOrgEditor(node){
+  const col=ORG_TYPE_COLOR[node.type]||'#888';
+  const persons=flatPersonsUnder(node);
+  const canAdd=(ORG_CHILD_TYPES[node.type]||[]).length>0;
+  const isRoot=node.id===S.globalOrg?.id;
+  let html=`<div class="card">
+    <div class="flex-between" style="margin-bottom:1.25rem;">
+      <div class="flex-ac">
+        <div style="width:36px;height:36px;border-radius:8px;background:${col}18;color:${col};display:flex;align-items:center;justify-content:center;font-size:18px;">${ORG_TYPE_ICON[node.type]||'●'}</div>
+        <div>
+          <input type="text" value="${node.name}" onchange="patchOrgNode('${node.id}',{name:this.value})" style="font-size:15px;font-weight:700;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:2px 0;width:220px;outline:none;">
+          <div style="font-size:11px;color:var(--faint);margin-top:2px;">${node.type} · ${persons.length} people below</div>
+        </div>
+      </div>
+      ${canAdd?`<button class="btn btn-primary btn-sm" onclick="addOrgChild('${node.id}')">+ Add ${(ORG_CHILD_TYPES[node.type]||[''])[0]}</button>`:''}
+    </div>`;
+  if(node.type!=='person'&&node.type!=='org'){
+    html+=`<div class="flex-ac" style="margin-bottom:10px;"><span style="font-size:12px;color:var(--muted);">Color:</span>
+      ${TCOLS.map(c=>`<div onclick="patchOrgNode('${node.id}',{color:'${c}'})" style="width:14px;height:14px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${(node.color||'')===c?'#fff':'transparent'};"></div>`).join('')}
+    </div>`;
+  }
+  if(node.type==='person'){
+    html+=`<div style="margin-bottom:10px;">
+      <input type="text" value="${node.role||''}" placeholder="Role / title" onchange="patchOrgNode('${node.id}',{role:this.value})" style="font-size:12px;color:var(--muted);background:transparent;border:none;border-bottom:1px solid var(--border);padding:2px 0;width:100%;outline:none;">
+    </div>
+    <h3>Technical skills</h3>
+    ${TECH_SKILLS.map(sk=>orgSkillRow(node,sk)).join('')}
+    <div class="sep"></div>
+    <h3>Personality &amp; work style</h3>
+    ${PERS_SKILLS.map(sk=>orgSkillRow(node,sk)).join('')}`;
+  }
+  return html+'</div>';
+}
+
+function orgSkillRow(node,sk){
+  const{m:mn,s:sg}=node.skills?.[sk]||{m:5,s:1.5};
+  const uid2=`os_${node.id}_${sk.replace(/[^a-z0-9]/gi,'_')}`;
+  return`<div class="skill-row">
+    <div class="skill-label">${sk}</div>
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <div class="slider-line"><span class="slider-hint">Level</span>
+        <input type="range" min="0" max="10" step="0.5" value="${mn}" oninput="patchOrgSkill('${node.id}','${sk}','m',this.value);const e=document.getElementById('${uid2}');if(e){e.textContent=parseFloat(this.value).toFixed(1);e.style.color=scv(parseFloat(this.value));}">
+      </div>
+      <div class="slider-line"><span class="slider-hint" style="color:var(--faint);">Uncert.</span>
+        <input type="range" min="0.2" max="3" step="0.1" value="${sg}" oninput="patchOrgSkill('${node.id}','${sk}','s',this.value)" style="opacity:.45;">
+      </div>
+    </div>
+    <div class="skill-val" id="${uid2}" style="color:${scv(mn)};">${mn.toFixed(1)}</div>
+  </div>`;
+}
+
+function updateMapTransform(){
+  const g=document.getElementById('orgMapG');
+  if(g)g.setAttribute('transform',`translate(${orgMapPan.x},${orgMapPan.y}) scale(${orgMapZoom})`);
+}
+
+function initOrgMapEvents(){
+  const svg=document.getElementById('orgMapSvg');if(!svg)return;
+  svg.addEventListener('wheel',e=>{e.preventDefault();orgMapZoom=Math.max(.25,Math.min(2.2,orgMapZoom+(e.deltaY>0?-.1:.1)));updateMapTransform();},{passive:false});
+  svg.addEventListener('mousedown',e=>{if(e.target.closest('.omap-node')||e.target.closest('circle'))return;orgMapDragging={sx:e.clientX-orgMapPan.x,sy:e.clientY-orgMapPan.y};svg.style.cursor='grabbing';});
+  window.addEventListener('mousemove',e=>{if(!orgMapDragging)return;orgMapPan.x=e.clientX-orgMapDragging.sx;orgMapPan.y=e.clientY-orgMapDragging.sy;updateMapTransform();});
+  window.addEventListener('mouseup',()=>{if(orgMapDragging){orgMapDragging=null;const s=document.getElementById('orgMapSvg');if(s)s.style.cursor='grab';}});
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TEAMS
+// ════════════════════════════════════════════════════════════════════════════
+function renderTeams(){
+  const proj=ap();if(!proj)return;
+  const{teams,selTeamId,selMemberId}=proj;
+  const team=teams.find(t=>t.id===selTeamId);
+  const rawMember=team?.members.find(m=>m.id===selMemberId);
+
+  const orgLookup={};
+  flatPersons(S.globalOrg||{}).forEach(p=>{orgLookup[p.id]=p;});
+  const resolveName=m=>m.orgId?orgLookup[m.orgId]?.name||'Linked':m.name||'Unknown';
+  const resolveRole=m=>m.orgId?orgLookup[m.orgId]?.role||'':m.role||'';
+  const resolveSkills=m=>m.orgId?orgLookup[m.orgId]?.skills||{}:m.skills||{};
+
+  const teamList=teams.map(t=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:8px;cursor:pointer;border:1px solid ${t.id===selTeamId?'var(--border)':'transparent'};background:${t.id===selTeamId?'var(--bg3)':'transparent'};transition:all .15s;margin-bottom:4px;" onclick="selectTeam('${proj.id}','${t.id}')">
+      <div style="width:10px;height:10px;border-radius:50%;background:${t.color};flex-shrink:0;box-shadow:0 0 6px ${t.color}66;"></div>
+      <div style="min-width:0;flex:1;"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${t.name}</div>
+        <div style="font-size:11px;color:var(--faint);">${t.members.length} member${t.members.length!==1?'s':''}</div></div>
+      <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delTeam('${proj.id}','${t.id}')">✕</button>
+    </div>`).join('');
+
+  const memberList=team?team.members.map(m=>{
+    const nm=resolveName(m),rl=resolveRole(m);
+    return`<div class="member-item ${m.id===selMemberId?'sel':''}" onclick="selectMember('${proj.id}','${m.id}')">
+      <div class="avatar" style="width:32px;height:32px;background:${team.color}22;color:${team.color};">${ini(nm)}</div>
+      <div style="min-width:0;flex:1;"><div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${nm}</div>
+        <div style="font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${rl}</div></div>
+      ${m.orgId?'<span class="org-tag">org</span>':''}
+    </div>`;}).join(''):'';
+
+  let editor='<div style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--faint);font-size:13px;">← Select a member</div>';
+  if(rawMember){
+    const isLinked=!!rawMember.orgId;
+    const nm=resolveName(rawMember),rl=resolveRole(rawMember),sk=resolveSkills(rawMember);
+    editor=`<div class="card">
+      <div class="flex-between" style="margin-bottom:1.25rem;">
+        <div class="flex-ac">
+          <div class="avatar" style="width:44px;height:44px;font-size:15px;background:${team.color}22;color:${team.color};">${ini(nm)}</div>
+          <div>${isLinked?`<div style="font-size:15px;font-weight:700;">${nm}</div><div style="font-size:12px;color:var(--muted);">${rl}</div>
+              <div style="margin-top:4px;font-size:11px;color:var(--teal);">🔗 Linked from org — edit in Organization</div>`
+            :`<input type="text" value="${nm}" onchange="patchMember('${proj.id}','${rawMember.id}',{name:this.value})" style="font-size:15px;font-weight:700;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:2px 0;width:200px;outline:none;">
+              <input type="text" value="${rl}" onchange="patchMember('${proj.id}','${rawMember.id}',{role:this.value})" style="font-size:12px;background:transparent;border:none;color:var(--muted);padding:2px 0;width:200px;outline:none;display:block;margin-top:4px;">`}</div>
+        </div>
+        <div class="flex-ac">
+          <select onchange="moveMember('${proj.id}','${rawMember.id}',this.value)">${teams.map(t=>`<option value="${t.id}" ${t.id===selTeamId?'selected':''}>${t.name}</option>`).join('')}</select>
+          ${isLinked?`<button class="btn btn-sm" onclick="unlinkMember('${proj.id}','${rawMember.id}')">Unlink</button>`:''}
+          <button class="btn btn-danger btn-sm" onclick="delMember('${proj.id}','${rawMember.id}')">Remove</button>
+        </div>
+      </div>
+      ${isLinked?`<h3>Skills (read-only — edit in Organization)</h3>${ALL_SKILLS.map(sk2=>{const mn=sk[sk2]?.m||0;return`<div style="display:grid;grid-template-columns:120px 1fr 44px;align-items:center;gap:10px;margin-bottom:7px;"><div class="skill-label">${sk2}</div><div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${mn*10}%;background:${scv(mn)};border-radius:2px;"></div></div><div class="skill-val" style="color:${scv(mn)};">${mn.toFixed(1)}</div></div>`;}).join('')}`
+      :`<h3>Technical skills</h3>${TECH_SKILLS.map(sk2=>memberSkillRow(rawMember,sk2,proj.id)).join('')}<div class="sep"></div><h3>Personality &amp; work style</h3>${PERS_SKILLS.map(sk2=>memberSkillRow(rawMember,sk2,proj.id)).join('')}`}
+    </div>`;
+  }
+
+  document.getElementById('panelTeams').innerHTML=`
+    <div class="flex-between mb15">
+      <div><h2 style="margin:0 0 4px;">Teams</h2>
+        <div style="font-size:12px;color:var(--muted);">Project: <span style="color:${proj.color};font-weight:600;">${proj.name}</span></div></div>
+      <div class="flex-ac">
+        <button class="btn" onclick="openImportPicker()">⬇ Import from Org</button>
+        <button class="btn btn-primary" onclick="addTeam('${proj.id}')">+ New Team</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:200px 210px 1fr;gap:16px;align-items:start;">
+      <div><h3>Teams (${teams.length})</h3>${teamList}</div>
+      <div>${team?`<div class="flex-between" style="margin-bottom:8px;">
+          <div>
+            <input type="text" value="${team.name}" onchange="patchTeam('${proj.id}','${team.id}',{name:this.value})" style="font-size:13px;font-weight:700;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:2px 0;width:130px;outline:none;">
+            <div class="flex-ac" style="margin-top:6px;gap:5px;"><span style="font-size:11px;color:var(--faint);">Color:</span>
+              ${TCOLS.map(c=>`<div onclick="patchTeam('${proj.id}','${team.id}',{color:'${c}'})" style="width:13px;height:13px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===team.color?'#fff':'transparent'};"></div>`).join('')}
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="addStandaloneMember('${proj.id}','${team.id}')">+ Add</button>
+        </div>
+        <h3>Members (${team.members.length})</h3>${memberList}`:'<div style="color:var(--faint);font-size:13px;">Select a team</div>'}</div>
+      <div>${editor}</div>
+    </div>`;
+}
+
+function memberSkillRow(m,sk,pid){
+  const{m:mn,s:sg}=m.skills?.[sk]||{m:5,s:1.5};
+  const uid2=`ms_${m.id}_${sk.replace(/[^a-z0-9]/gi,'_')}`;
+  return`<div class="skill-row">
+    <div class="skill-label">${sk}</div>
+    <div style="display:flex;flex-direction:column;gap:3px;">
+      <div class="slider-line"><span class="slider-hint">Level</span>
+        <input type="range" min="0" max="10" step="0.5" value="${mn}" oninput="patchMemberSkill('${pid}','${m.id}','${sk}','m',this.value);const e=document.getElementById('${uid2}');if(e){e.textContent=parseFloat(this.value).toFixed(1);e.style.color=scv(parseFloat(this.value));}">
+      </div>
+      <div class="slider-line"><span class="slider-hint" style="color:var(--faint);">Uncert.</span>
+        <input type="range" min="0.2" max="3" step="0.1" value="${sg}" oninput="patchMemberSkill('${pid}','${m.id}','${sk}','s',this.value)" style="opacity:.45;">
+      </div>
+    </div>
+    <div class="skill-val" id="${uid2}" style="color:${scv(mn)};">${mn.toFixed(1)}</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASES  (split pane: list editor + interactive diagram)
+// ════════════════════════════════════════════════════════════════════════════
+const PH_W=200, PH_H=80; // phase node dimensions
+let pdDrag=null;          // {pid, phid, sx, sy}
+let pdConnFrom=null;      // phase id waiting for second click
+let pdMode='none';        // 'none' | 'connecting'
+let pdPan={x:20,y:20}, pdZoom=1, pdPanning=null;
+let selPhaseId=null;
+
+function renderPhases(){
+  const proj=ap(); if(!proj) return;
+  const{phases,phaseEdges=[]}=proj;
+  const tw=phases.reduce((a,p)=>a+p.weeks,0);
+  const bar=phases.map((ph,i)=>`<div class="phase-seg" style="flex:${ph.weeks};background:${PCOLS[i%4]}22;"><span style="color:${PCOLS[i%4]};">${ph.name} (${ph.weeks}w)</span></div>`).join('');
+
+  // ── List (left) ─────────────────────────────────────────────────────────
+  const cards=phases.map((ph,pi)=>{
+    const col=PCOLS[pi%4],isSel=ph.id===selPhaseId,isFirst=pi===0,isLast=pi===phases.length-1;
+    const toggles=ALL_SKILLS.map(sk=>{const on=ph.required?.[sk]!==undefined;return`<button class="skill-toggle ${on?'on':''}" style="${on?`color:${col};border-color:${col};background:${col}18;`:''}" onclick="togglePhaseSkill('${proj.id}','${ph.id}','${sk}')">${sk}</button>`;}).join('');
+    const sliders=Object.keys(ph.required||{}).length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:8px;margin-top:10px;">
+      ${Object.entries(ph.required||{}).map(([sk,lv])=>`<div class="flex-ac"><span style="font-size:11px;color:var(--muted);width:100px;flex-shrink:0;">${sk}</span>
+        <input type="range" min="1" max="10" step="0.5" value="${lv}" oninput="updatePhaseReq('${proj.id}','${ph.id}','${sk}',this.value);this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1)" style="flex:1;">
+        <span style="font-size:12px;font-weight:700;min-width:24px;font-family:var(--mono);">${parseFloat(lv).toFixed(1)}</span>
+      </div>`).join('')}</div>`:`<div style="font-size:12px;color:var(--faint);margin-top:8px;">No requirements — click skills above</div>`;
+    return`<div class="phase-card" id="phcard_${ph.id}" style="border-left-color:${col};cursor:pointer;${isSel?`outline:2px solid ${col};`:''}" onclick="selectPhase('${ph.id}')">
+      <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <button class="btn btn-sm" onclick="event.stopPropagation();movePhase('${proj.id}','${ph.id}',-1)" style="${isFirst?'opacity:.25;cursor:default;':''}">▲</button>
+          <button class="btn btn-sm" onclick="event.stopPropagation();movePhase('${proj.id}','${ph.id}',1)" style="${isLast?'opacity:.25;cursor:default;':''}">▼</button>
+        </div>
+        <div class="flex-ac"><span style="font-size:11px;font-weight:700;color:${col};font-family:var(--mono);">${pi+1}</span>
+          <input type="text" value="${ph.name}" onclick="event.stopPropagation()" onchange="patchPhase('${proj.id}','${ph.id}',{name:this.value})" style="font-size:14px;font-weight:700;flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);padding:2px 0;outline:none;"></div>
+        <div class="flex-ac" onclick="event.stopPropagation()"><span style="font-size:12px;color:var(--muted);">Duration:</span>
+          <input type="number" min="1" max="52" value="${ph.weeks}" onchange="patchPhase('${proj.id}','${ph.id}',{weeks:parseInt(this.value)})" style="width:50px;text-align:center;">
+          <span style="font-size:12px;color:var(--muted);">w</span></div>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();delPhase('${proj.id}','${ph.id}')">✕</button>
+      </div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:6px;">Toggle required skills:</div>
+      <div>${toggles}</div>${sliders}
+    </div>`;}).join('');
+
+  // ── Diagram (right) ──────────────────────────────────────────────────────
+  const diagramHtml = buildPhaseDiagram(proj);
+
+  document.getElementById('panelPhases').innerHTML=`
+    <div class="flex-between mb15" style="flex-shrink:0;">
+      <div><h2 style="margin:0 0 4px;">Phases</h2>
+        <div class="flex-ac">
+          <span style="font-size:12px;color:var(--muted);">Project:</span>
+          <input type="text" value="${proj.name}" onchange="patchProject('${proj.id}',{name:this.value})" style="font-size:14px;font-weight:600;">
+          <div class="flex-ac" style="gap:4px;">${PROJ_COLORS.map(c=>`<div onclick="patchProject('${proj.id}',{color:'${c}'})" style="width:13px;height:13px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===proj.color?'#fff':'transparent'};"></div>`).join('')}</div>
+          <span style="font-size:12px;color:var(--faint);">${tw}w total</span>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="addPhase('${proj.id}')">+ Add Phase</button>
+    </div>
+    <div class="phase-bar mb15" style="flex-shrink:0;">${bar}</div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;">
+      <div style="overflow-y:auto;max-height:calc(100vh - 240px);">${cards}</div>
+      <div style="position:sticky;top:0;">${diagramHtml}</div>
+    </div>`;
+
+  initPhaseDiagramEvents(proj.id);
+}
+
+function _phX(ph, i){ return (ph.x != null && !isNaN(ph.x)) ? ph.x : 60; }
+function _phY(ph, i){ return (ph.y != null && !isNaN(ph.y)) ? ph.y : 60 + i * 150; }
+
+// ── Build the SVG phase diagram ───────────────────────────────────────────────
+function buildPhaseDiagram(proj){
+  const{phases,phaseEdges=[]}=proj;
+  // Ensure every phase has safe numeric x,y (DB may pre-date these fields)
+  phases.forEach((ph,i)=>{ ph.x=_phX(ph,i); ph.y=_phY(ph,i); });
+  const phMap=Object.fromEntries(phases.map(p=>[p.id,p]));
+
+  // Edges
+  let edgesSvg='';
+  phaseEdges.forEach(e=>{
+    const f=phMap[e.from],t=phMap[e.to]; if(!f||!t) return;
+    const x1=f.x+PH_W/2, y1=f.y+PH_H;
+    const x2=t.x+PH_W/2, y2=t.y;
+    const my=(y1+y2)/2;
+    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||'#4a9eff';
+    edgesSvg+=`<g class="ph-edge" data-eid="${e.id}">
+      <path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"
+        stroke="${col}" stroke-width="2" fill="none" marker-end="url(#pharr)"
+        style="cursor:pointer;" onclick="delPhaseEdge('${proj.id}','${e.id}')"/>
+      <title>Click to remove connection</title>
+    </g>`;
+  });
+
+  // Nodes
+  let nodesSvg='';
+  phases.forEach((ph,pi)=>{
+    const col=PCOLS[pi%4];
+    const isSel=ph.id===selPhaseId;
+    const isSrc=pdConnFrom===ph.id;
+    const reqKeys=Object.keys(ph.required||{}).slice(0,3);
+    const reqStr=reqKeys.join(', ')+(Object.keys(ph.required||{}).length>3?'…':'');
+    nodesSvg+=`
+      <g class="ph-node" data-phid="${ph.id}" data-pid="${proj.id}"
+         transform="translate(${ph.x},${ph.y})"
+         style="cursor:${pdMode==='connecting'?'crosshair':'move'};"
+         onclick="phNodeClick('${proj.id}','${ph.id}')">
+        <rect width="${PH_W}" height="${PH_H}" rx="8"
+          fill="${isSel||isSrc?col+'22':'#1e2535'}"
+          stroke="${isSel?col:isSrc?col:col+'66'}"
+          stroke-width="${isSel||isSrc?2.5:1.5}"
+          ${isSrc?`filter="drop-shadow(0 0 8px ${col}88)"`:''}/>
+        <rect width="${PH_W}" height="5" rx="8" fill="${col}"/>
+        <rect width="${PH_W}" y="2" height="3" fill="${col}"/>
+        <text x="12" y="24" fill="${col}" font-size="11" font-weight="700"
+          font-family="Segoe UI,system-ui">${ph.name.length>22?ph.name.slice(0,21)+'…':ph.name}</text>
+        <text x="12" y="40" fill="#8893a8" font-size="10" font-family="Segoe UI,system-ui">
+          ${ph.weeks}w${reqStr?' · '+reqStr:''}</text>
+        <text x="${PH_W-10}" y="${PH_H-10}" text-anchor="end" fill="${col}66"
+          font-size="18" font-weight="700" font-family="Consolas,monospace">${pi+1}</text>
+        ${isSel?`
+        <g onclick="event.stopPropagation();delPhase('${proj.id}','${ph.id}')"
+           transform="translate(${PH_W-18},6)" style="cursor:pointer;">
+          <circle r="8" fill="#e0505044" stroke="#e0505088"/>
+          <text x="0" y="4" text-anchor="middle" fill="#e05050" font-size="10">✕</text>
+        </g>`:''}
+      </g>`;
+  });
+
+  // Ghost line when in connecting mode
+  const ghostSvg=`<line id="phGhost" stroke="#4a9eff" stroke-width="2" stroke-dasharray="6,3" display="none" x1="0" y1="0" x2="0" y2="0"/>`;
+
+  return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">
+      <span style="font-size:12px;font-weight:600;color:var(--muted);">Phase Diagram</span>
+      <div class="flex-ac">
+        <button class="btn btn-sm ${pdMode==='connecting'?'btn-active':''}"
+          onclick="togglePhDiagConnMode('${proj.id}')">${pdMode==='connecting'?'● Connecting…':'⊕ Connect'}</button>
+        <button class="btn btn-sm" onclick="phDiagAutoLayout('${proj.id}')">↺ Auto</button>
+        <button class="btn btn-sm" onclick="pdZoom=Math.min(2,pdZoom+.15);phUpdateTransform()">+</button>
+        <button class="btn btn-sm" onclick="pdZoom=Math.max(.3,pdZoom-.15);phUpdateTransform()">−</button>
+        <button class="btn btn-sm" onclick="pdPan={x:20,y:20};pdZoom=1;phUpdateTransform()">⊙</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--faint);padding:5px 14px;border-bottom:1px solid var(--border);">
+      ${pdMode==='connecting'
+        ? '<span style="color:var(--blue);">Click first node → click second to connect</span>'
+        : 'Drag nodes · ⊕ Connect to draw edges · Click edge to remove · Click node to select'}
+    </div>
+    <svg id="phDiagSvg" width="100%" height="520"
+         style="background:var(--bg3);display:block;cursor:${pdMode==='connecting'?'crosshair':'grab'}">
+      <defs>
+        <marker id="pharr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="#4a9eff88"/>
+        </marker>
+      </defs>
+      <g id="phDiagG" transform="translate(${pdPan.x},${pdPan.y}) scale(${pdZoom})">
+        <g id="phEdgesG">${edgesSvg}</g>
+        <g id="phNodesG">${nodesSvg}</g>
+        ${ghostSvg}
+      </g>
+    </svg>
+  </div>`;
+}
+
+function phUpdateTransform(){
+  const g=document.getElementById('phDiagG');
+  if(g) g.setAttribute('transform',`translate(${pdPan.x},${pdPan.y}) scale(${pdZoom})`);
+}
+
+function initPhaseDiagramEvents(pid){
+  const svg=document.getElementById('phDiagSvg'); if(!svg) return;
+
+  // Drag nodes
+  svg.querySelectorAll('.ph-node').forEach(el=>{
+    el.addEventListener('mousedown',e=>{
+      if(pdMode==='connecting') return;
+      const phid=el.dataset.phid;
+      const ph=ap()?.phases?.find(p=>p.id===phid); if(!ph) return;
+      const rect=svg.getBoundingClientRect();
+      const phx=_phX(ph,0), phy=_phY(ph,0);
+      pdDrag={pid,phid,sx:(e.clientX-rect.left)/pdZoom-pdPan.x/pdZoom-phx,
+                        sy:(e.clientY-rect.top)/pdZoom-pdPan.y/pdZoom-phy};
+      e.preventDefault(); e.stopPropagation();
+    });
+  });
+
+  // Pan + ghost line
+  svg.addEventListener('mousedown',e=>{
+    if(e.target.closest('.ph-node')) return;
+    pdPanning={sx:e.clientX-pdPan.x,sy:e.clientY-pdPan.y};
+    svg.style.cursor='grabbing';
+  });
+
+  svg.addEventListener('mousemove',e=>{
+    const rect=svg.getBoundingClientRect();
+    const mx=(e.clientX-rect.left-pdPan.x)/pdZoom;
+    const my=(e.clientY-rect.top-pdPan.y)/pdZoom;
+
+    if(pdDrag){
+      const proj=S.projects?.find(p=>p.id===pdDrag.pid);
+      const ph=proj?.phases?.find(p=>p.id===pdDrag.phid); if(!ph) return;
+      ph.x = mx - pdDrag.sx;
+      ph.y = my - pdDrag.sy;
+      // Lightweight re-render of just the SVG content
+      _redrawPhaseDiagram(proj);
+      // Debounced persist
+      const {pid: _pid, phid: _phid} = pdDrag;
+      const _x = ph.x, _y = ph.y;
+      clearTimeout(pdDrag._t);
+      pdDrag._t=setTimeout(()=>PATCH(`/api/projects/${_pid}/phases/${_phid}`,{x:_x,y:_y}),400);
+      return;
+    }
+    if(pdPanning){
+      pdPan.x=e.clientX-pdPanning.sx;
+      pdPan.y=e.clientY-pdPanning.sy;
+      phUpdateTransform(); return;
+    }
+    // Ghost line in connect mode
+    if(pdMode==='connecting'&&pdConnFrom){
+      const proj=ap(); if(!proj) return;
+      const ph=proj.phases.find(p=>p.id===pdConnFrom); if(!ph) return;
+      const ghost=document.getElementById('phGhost'); if(!ghost) return;
+      ghost.setAttribute('x1',_phX(ph,0)+PH_W/2);
+      ghost.setAttribute('y1',_phY(ph,0)+PH_H/2);
+      ghost.setAttribute('x2',mx);
+      ghost.setAttribute('y2',my);
+      ghost.setAttribute('display','block');
+    }
+  });
+
+  svg.addEventListener('mouseup',()=>{
+    pdDrag=null; pdPanning=null;
+    if(pdMode!=='connecting') svg.style.cursor='grab';
+  });
+  svg.addEventListener('mouseleave',()=>{pdDrag=null;pdPanning=null;});
+
+  // Zoom
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    pdZoom=Math.max(.3,Math.min(2,pdZoom+(e.deltaY>0?-.1:.1)));
+    phUpdateTransform();
+  },{passive:false});
+}
+
+// Lightweight in-place SVG redraw during drag (no full DOM rebuild)
+function _redrawPhaseDiagram(proj){
+  const{phases,phaseEdges=[]}=proj;
+  const phMap=Object.fromEntries(phases.map(p=>[p.id,p]));
+
+  // Reposition nodes
+  const nodesG=document.getElementById('phNodesG'); if(!nodesG) return;
+  nodesG.querySelectorAll('.ph-node').forEach(el=>{
+    const ph=phMap[el.dataset.phid]; if(!ph) return;
+    const phx=_phX(ph,0), phy=_phY(ph,0);
+    el.setAttribute('transform',`translate(${phx},${phy})`);
+  });
+
+  // Redraw edges
+  const edgesG=document.getElementById('phEdgesG'); if(!edgesG) return;
+  edgesG.innerHTML='';
+  phaseEdges.forEach(e=>{
+    const f=phMap[e.from],t=phMap[e.to]; if(!f||!t) return;
+    const x1=_phX(f,0)+PH_W/2,y1=_phY(f,0)+PH_H,x2=_phX(t,0)+PH_W/2,y2=_phY(t,0),my=(y1+y2)/2;
+    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||'#4a9eff';
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
+    path.setAttribute('stroke',col); path.setAttribute('stroke-width','2');
+    path.setAttribute('fill','none'); path.setAttribute('marker-end','url(#pharr)');
+    path.style.cursor='pointer';
+    path.addEventListener('click',()=>delPhaseEdge(proj.id,e.id));
+    edgesG.appendChild(path);
+  });
+}
+
+function selectPhase(phid){
+  selPhaseId=(selPhaseId===phid?null:phid);
+  renderPhases();
+}
+
+function phNodeClick(pid,phid){
+  if(pdMode!=='connecting'){selectPhase(phid);return;}
+  if(!pdConnFrom){
+    pdConnFrom=phid;
+    // Dim ghost start
+    const g=document.getElementById('phGhost');
+    if(g) g.setAttribute('display','none');
+    renderPhases(); // refresh to show src highlight
+    return;
+  }
+  if(pdConnFrom===phid){pdConnFrom=null;renderPhases();return;}
+  // Create edge
+  const fromId=pdConnFrom; pdConnFrom=null;
+  const ghost=document.getElementById('phGhost');
+  if(ghost) ghost.setAttribute('display','none');
+  POST(`/api/projects/${pid}/phase-edges`,{from:fromId,to:phid})
+    .then(()=>loadState().then(()=>renderPhases()));
+}
+
+async function delPhaseEdge(pid,eid){
+  await DELETE(`/api/projects/${pid}/phase-edges/${eid}`);
+  await loadState(); renderPhases();
+}
+
+function togglePhDiagConnMode(pid){
+  pdMode=pdMode==='connecting'?'none':'connecting';
+  if(pdMode==='none') pdConnFrom=null;
+  renderPhases();
+}
+
+async function phDiagAutoLayout(pid){
+  const proj=S.projects?.find(p=>p.id===pid); if(!proj) return;
+  const{phases,phaseEdges=[]}=proj;
+  // Topological sort → assign columns by longest-path level
+  const inDeg=Object.fromEntries(phases.map(p=>[p.id,0]));
+  phaseEdges.forEach(e=>{ if(inDeg[e.to]!==undefined) inDeg[e.to]++; });
+  const level={};
+  const queue=phases.filter(p=>inDeg[p.id]===0).map(p=>p.id);
+  queue.forEach(id=>level[id]=0);
+  while(queue.length){
+    const cur=queue.shift();
+    phaseEdges.filter(e=>e.from===cur).forEach(e=>{
+      level[e.to]=Math.max(level[e.to]||0,(level[cur]||0)+1);
+      if(--inDeg[e.to]===0) queue.push(e.to);
+    });
+  }
+  // Group by level
+  const byLevel={};
+  phases.forEach(p=>{const lv=level[p.id]??0;(byLevel[lv]||(byLevel[lv]=[])).push(p.id);});
+  const PH_XGAP=240, PH_YGAP=150, START_X=60, START_Y=50;
+  for(const [lv,ids] of Object.entries(byLevel)){
+    ids.forEach((id,col)=>{
+      const ph=proj.phases.find(p=>p.id===id); if(!ph) return;
+      ph.x=START_X+col*PH_XGAP; ph.y=START_Y+parseInt(lv)*PH_YGAP;
+    });
+  }
+  // Persist all positions
+  await Promise.all(proj.phases.map(ph=>
+    PATCH(`/api/projects/${pid}/phases/${ph.id}`,{x:ph.x,y:ph.y})
+  ));
+  await loadState(); renderPhases();
+}
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// ORG CHART (per-project connections)
+// ════════════════════════════════════════════════════════════════════════════
+function renderOrgChart(){
+  const proj=ap();if(!proj)return;
+  const{teams,connections}=proj;
+  const orgMode=proj.orgMode||'none';
+  const connTypes=[{val:'integration',label:'Integration',col:'#4a9eff'},{val:'dependency',label:'Dependency',col:'#f0a030'},{val:'handoff',label:'Handoff',col:'#1fb885'},{val:'reporting',label:'Reporting',col:'#9b7ee8'}];
+
+  const orgLookup={};flatPersons(S.globalOrg||{}).forEach(p=>{orgLookup[p.id]=p;});
+  const resolveName=m=>m.orgId?orgLookup[m.orgId]?.name||'?':m.name||'?';
+
+  // Build SVG edges & nodes
+  let edges='',nodes='';
+  connections.forEach(c=>{
+    const ft=teams.find(t=>t.id===c.from),tt=teams.find(t=>t.id===c.to);if(!ft||!tt)return;
+    const col=tCol(c.type);
+    const x1=ft.x+NODE_W/2,y1=ft.y+NODE_H/2,x2=tt.x+NODE_W/2,y2=tt.y+NODE_H/2;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=-dy/len*20,ny=dx/len*20;
+    edges+=`<path d="M${x1},${y1} Q${mx+nx},${my+ny} ${x2},${y2}" stroke="${col}" stroke-width="2" fill="none" marker-end="url(#arr-${c.type})" stroke-dasharray="${c.type==='dependency'?'6,3':'none'}"/>
+      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="#161b27" stroke="${col}" stroke-width="1" opacity=".92"/>
+      <text x="${mx+nx}" y="${my+ny+4}" text-anchor="middle" fill="${col}" font-size="10" font-family="Segoe UI,system-ui" font-weight="600">${c.label||c.type}</text>`;
+  });
+  teams.forEach(t=>{
+    const isSrc=orgConnFrom===t.id;
+    nodes+=`<g class="proj-node" data-id="${t.id}" transform="translate(${t.x},${t.y})" cursor="${orgMode==='connecting'?'crosshair':'move'}" onclick="projNodeClick('${proj.id}','${t.id}')">
+      <rect width="${NODE_W}" height="${NODE_H}" rx="10" fill="#1e2535" stroke="${isSrc?t.color:t.color+'44'}" stroke-width="${isSrc?3:1.5}"/>
+      <rect width="${NODE_W}" height="6" rx="10" fill="${t.color}"/>
+      <text x="12" y="26" fill="${t.color}" font-size="12" font-weight="700" font-family="Segoe UI,system-ui">${t.name}</text>
+      <text x="12" y="42" fill="#8893a8" font-size="10" font-family="Segoe UI,system-ui">${t.members.length} members</text>
+      <text x="12" y="82" fill="#4a556a" font-size="10" font-family="Segoe UI,system-ui">${t.members.slice(0,3).map(m=>ini(resolveName(m))).join(' · ')}${t.members.length>3?'…':''}</text>
+    </g>`;
+  });
+
+  const connList=connections.map(c=>{
+    const ft=teams.find(t=>t.id===c.from),tt=teams.find(t=>t.id===c.to);const ct=connTypes.find(t=>t.val===c.type)||connTypes[0];
+    if(!ft||!tt)return'';
+    return`<div class="flex-ac" style="padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;">
+      <span style="color:${ft.color};font-weight:600;">${ft.name}</span><span style="color:var(--faint);margin:0 4px;">→</span>
+      <span style="color:${tt.color};font-weight:600;">${tt.name}</span>
+      <span style="margin:0 8px;padding:2px 8px;border-radius:4px;background:${ct.col}18;color:${ct.col};font-size:11px;">${c.label||ct.label}</span>
+      <button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="delConnection('${proj.id}','${c.id}')">✕</button>
+    </div>`;}).join('');
+
+  document.getElementById('panelOrgchart').innerHTML=`
+    <div class="flex-between mb15">
+      <div><h2 style="margin:0 0 4px;">Team Interfaces</h2>
+        <div style="font-size:12px;color:var(--muted);">Project: <span style="color:${proj.color};font-weight:600;">${proj.name}</span></div></div>
+      <div class="flex-ac">
+        <button class="btn ${orgMode==='connecting'?'btn-active':''}" onclick="toggleProjConnMode('${proj.id}')">${orgMode==='connecting'?'● Connecting…':'⊕ Connect Teams'}</button>
+        <button class="btn" onclick="autoLayoutTeams('${proj.id}')">↺ Auto Layout</button>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--faint);margin-bottom:10px;">${orgMode==='connecting'?'<span style="color:var(--blue);">Click first team node, then second.</span>':'Drag nodes to reposition · use Connect Teams to link.'}</div>
+    <svg id="orgSvg" width="100%" height="500" style="background:var(--bg3);border-radius:10px;border:1px solid var(--border);display:block;cursor:${orgMode==='connecting'?'crosshair':'grab'}">
+      <defs>${['integration:#4a9eff','dependency:#f0a030','handoff:#1fb885','reporting:#9b7ee8'].map(s=>{const[v,c]=s.split(':');return`<marker id="arr-${v}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${c}"/></marker>`;}).join('')}</defs>
+      <g>${edges}</g><g>${nodes}</g>
+    </svg>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+      <div class="card"><h3>Connections (${connections.length})</h3>${connections.length?connList:'<div style="font-size:12px;color:var(--faint);">No connections yet</div>'}</div>
+      <div class="card"><h3>Add connection</h3>
+        <div class="flex-ac" style="flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+          <select id="connFrom">${teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}</select>
+          <span style="color:var(--faint);">→</span>
+          <select id="connTo">${teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')}</select>
+          <select id="connType">${connTypes.map(ct=>`<option value="${ct.val}">${ct.label}</option>`).join('')}</select>
+          <input type="text" id="connLabel" placeholder="Label" style="width:110px;font-size:12px;">
+          <button class="btn btn-primary" onclick="addConnectionForm('${proj.id}')">Add</button>
+        </div>
+        ${connTypes.map(ct=>`<div class="flex-ac" style="margin-bottom:7px;"><div style="width:24px;height:2px;background:${ct.col};margin-right:8px;flex-shrink:0;"></div><span style="font-size:12px;font-weight:600;color:${ct.col};min-width:75px;">${ct.label}</span></div>`).join('')}
+      </div>
+    </div>`;
+
+  initProjOrgEvents(proj.id);
+}
+
+function initProjOrgEvents(pid){
+  const svg=document.getElementById('orgSvg');if(!svg)return;
+  svg.querySelectorAll('.proj-node').forEach(el=>{
+    el.addEventListener('mousedown',e=>{
+      const proj=ap();if(proj?.orgMode==='connecting')return;
+      const id=el.dataset.id,t=proj?.teams.find(t=>t.id===id);if(!t)return;
+      const rect=svg.getBoundingClientRect();
+      orgNodeDrag={pid,id,sx:e.clientX-rect.left-t.x,sy:e.clientY-rect.top-t.y};e.preventDefault();
+    });
+  });
+  svg.onmousemove=e=>{
+    if(!orgNodeDrag)return;
+    const proj=S.projects?.find(p=>p.id===orgNodeDrag.pid);
+    const t=proj?.teams.find(t=>t.id===orgNodeDrag.id);if(!t)return;
+    const rect=svg.getBoundingClientRect();
+    t.x=Math.max(0,Math.min(e.clientX-rect.left-orgNodeDrag.sx,rect.width-NODE_W));
+    t.y=Math.max(0,Math.min(e.clientY-rect.top-orgNodeDrag.sy,500-NODE_H));
+    // Re-render edges only (lightweight)
+    renderOrgChart();
+  };
+  svg.onmouseup=()=>{orgNodeDrag=null;};
+  svg.onmouseleave=()=>{orgNodeDrag=null;};
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ANALYSIS
+// ════════════════════════════════════════════════════════════════════════════
+async function renderAnalysis(){
+  const proj=ap();if(!proj)return;
+  const{teams,connections,phases}=proj;
+  const allM=teams.flatMap(t=>t.members);
+  const tw=phases.reduce((a,p)=>a+p.weeks,0);
+  document.getElementById('panelAnalysis').innerHTML=`
+    <div class="flex-between mb15">
+      <div><h2 style="margin:0 0 4px;">${proj.name} — Analysis</h2>
+        <div style="font-size:12px;color:var(--muted);">${teams.length} teams · ${allM.length} members · ${phases.length} phases · ${tw}w <span class="spinner"></span></div></div>
+      <button class="btn btn-primary" onclick="renderAnalysis()">↻ Re-run</button>
+    </div>
+    <div id="analysisContent"><div style="padding:3rem;text-align:center;color:var(--muted);">Running Monte Carlo simulation on Python server…</div></div>`;
+
+  const data = await POST('/api/simulate', {projectId: proj.id, runs: 2000});
+  const res  = data.combined;
+  const tRes = data.teams;
+
+  const maxReq={};phases.forEach(ph=>Object.entries(ph.required||{}).forEach(([sk,lv])=>{if(!maxReq[sk]||maxReq[sk]<lv)maxReq[sk]=lv;}));
+  const gaps=Object.entries(maxReq).map(([sk,req])=>{const av=res.team_exp?.[sk]||0;return{sk,req,av,cov:Math.min(1,av/req)};}).sort((a,b)=>a.cov-b.cov);
+  const crit=gaps.filter(g=>g.cov<.85).length;
+  const oPct=Math.round((res.overall_prob||0)*100);
+  const sc=spCol(res.overall_prob||0);
+
+  const tCards=teams.map(t=>{
+    const tr=tRes[t.id]||{};const pct=Math.round((tr.overall_prob||0)*100);const hcol=spCol(tr.overall_prob||0);
+    const wk=Object.entries(maxReq).map(([sk,req])=>({sk,req,av:tr.team_exp?.[sk]||0,cov:Math.min(1,(tr.team_exp?.[sk]||0)/req)})).sort((a,b)=>a.cov-b.cov).slice(0,3);
+    return`<div class="card-sm" style="border-left:3px solid ${t.color};">
+      <div class="flex-between" style="margin-bottom:8px;">
+        <div class="flex-ac"><div style="width:8px;height:8px;border-radius:50%;background:${t.color};"></div><span style="font-weight:700;font-size:13px;">${t.name}</span><span style="font-size:11px;color:var(--faint);">${t.members.length}m</span></div>
+        <span style="font-size:18px;font-weight:700;font-family:var(--mono);color:${hcol};">${pct}%</span>
+      </div>
+      <div style="height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:8px;"><div style="height:100%;width:${pct}%;background:${hcol};border-radius:2px;"></div></div>
+      <div style="font-size:11px;color:var(--faint);margin-bottom:3px;">Weakest skills:</div>
+      ${wk.map(g=>`<div class="flex-ac" style="margin-top:4px;"><span style="font-size:11px;color:var(--muted);width:100px;flex-shrink:0;">${g.sk}</span>
+        <div class="gap-bar-wrap"><div class="gap-fill" style="width:${Math.round(g.cov*100)}%;background:${g.cov>=1?'#1fb885':g.cov>=.7?'#f0a030':'#e05050'};"></div></div>
+        <span style="font-size:10px;color:var(--faint);min-width:28px;">${Math.round(g.cov*100)}%</span></div>`).join('')}
+    </div>`;}).join('');
+
+  const gapRows=gaps.map(g=>{
+    const bc=g.cov>=1?'#1fb885':g.cov>=.85?'#5dc890':g.cov>=.7?'#f0a030':'#e05050';
+    const rb=g.cov>=.85?'b-ok':g.cov>=.7?'b-med':'b-high';
+    const risk=g.cov>=1?'None':g.cov>=.85?'Low':g.cov>=.7?'Medium':'High';
+    const ph=phases.filter(p=>p.required?.[g.sk]).map(p=>p.name).join(', ');
+    const gap=Math.max(0,g.req-g.av);
+    const contrib=teams.map(t=>{const tr2=tRes[t.id]||{};return(tr2.team_exp?.[g.sk]||0)>=1?`<span style="color:${t.color};font-size:10px;">●</span>`:null;}).filter(Boolean).join(' ');
+    return`<tr><td><div style="font-weight:600;">${g.sk}</div><div style="font-size:11px;color:var(--faint);">${ph}</div></td>
+      <td class="c" style="font-family:var(--mono);font-weight:700;">${g.req.toFixed(1)}</td>
+      <td class="c" style="font-family:var(--mono);font-weight:700;color:${bc};">${g.av.toFixed(1)}</td>
+      <td class="c" style="font-family:var(--mono);color:${gap>0?'#e05050':'#1fb885'};">${gap>0?'+'+gap.toFixed(1):'✓'}</td>
+      <td><div class="flex-ac"><div class="gap-bar-wrap"><div class="gap-fill" style="width:${Math.round(Math.min(100,g.cov*100))}%;background:${bc};"></div></div><span style="font-size:11px;color:var(--muted);min-width:30px;">${Math.round(g.cov*100)}%</span></div></td>
+      <td class="c"><span class="badge ${rb}">${risk}</span></td>
+      <td class="c">${contrib||'—'}</td></tr>`;}).join('');
+
+  const connRisks=connections.map(c=>{
+    const ft=teams.find(t=>t.id===c.from),tt=teams.find(t=>t.id===c.to);if(!ft||!tt)return'';
+    const fr=tRes[c.from]||{},tr2=tRes[c.to]||{};
+    const risk=Math.min(fr.overall_prob||0,tr2.overall_prob||0);
+    const overlap=ALL_SKILLS.filter(sk=>(fr.team_exp?.[sk]||0)>=7&&(tr2.team_exp?.[sk]||0)>=7);
+    return`<tr><td><span style="color:${ft.color};font-weight:600;">${ft.name}</span><span style="color:var(--faint);margin:0 5px;">→</span><span style="color:${tt.color};font-weight:600;">${tt.name}</span></td>
+      <td class="c"><span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${tCol(c.type)}18;color:${tCol(c.type)};">${c.label||c.type}</span></td>
+      <td class="c" style="font-family:var(--mono);font-weight:700;color:${spCol(risk)};">${Math.round(risk*100)}%</td>
+      <td style="font-size:11px;color:var(--muted);">${overlap.slice(0,4).join(', ')||'—'}</td></tr>`;}).join('');
+
+  const timeline=phases.map((ph,pi)=>{
+    const prob=(res.phase_prob||[])[pi]||0,pct=Math.round(prob*100),col=PCOLS[pi%4];
+    const phG=Object.entries(ph.required||{}).map(([sk,req])=>({sk,req,av:res.team_exp?.[sk]||0,ok:(res.team_exp?.[sk]||0)>=req}));
+    const bad=phG.filter(g=>!g.ok);
+    const contrib=teams.map(t=>{const tr2=tRes[t.id]||{};return Object.keys(ph.required||{}).some(sk=>(tr2.team_exp?.[sk]||0)>3)?`<span style="font-size:10px;padding:1px 7px;border-radius:10px;background:${t.color}18;color:${t.color};margin:2px;display:inline-block;">${t.name}</span>`:null;}).filter(Boolean).join('');
+    return`<div style="display:grid;grid-template-columns:16px 1fr;gap:12px;margin-bottom:14px;">
+      <div style="display:flex;flex-direction:column;align-items:center;"><div class="timeline-dot" style="background:${col};"></div>${pi<phases.length-1?'<div class="timeline-line"></div>':''}</div>
+      <div style="padding-bottom:14px;">
+        <div class="flex-between" style="margin-bottom:6px;"><div><span style="font-weight:700;font-size:14px;">${ph.name}</span><span style="font-size:12px;color:var(--muted);margin-left:8px;">${ph.weeks}w</span></div>
+          <div class="flex-ac"><span style="font-size:12px;color:var(--muted);">Success:</span><span style="font-size:16px;font-weight:700;font-family:var(--mono);color:${spCol(prob)};">${pct}%</span></div></div>
+        <div style="margin-bottom:5px;">${contrib}</div>
+        ${bad.length?`<div style="font-size:12px;color:var(--red);background:rgba(224,80,80,.08);padding:6px 10px;border-radius:6px;border:1px solid rgba(224,80,80,.2);margin-bottom:6px;">Gaps: ${bad.map(g=>`${g.sk} (need ${g.req.toFixed(0)}, ≈${g.av.toFixed(1)})`).join(' · ')}</div>`:`<div style="font-size:12px;color:var(--teal);margin-bottom:6px;">✓ All requirements covered</div>`}
+        <div>${phG.map(g=>`<span class="badge ${g.ok?'b-ok':'b-high'}" style="margin:2px;">${g.sk} ${g.ok?'✓':g.av.toFixed(1)+'/'+g.req.toFixed(0)}</span>`).join('')}</div>
+      </div></div>`;}).join('');
+
+  document.getElementById('analysisContent').innerHTML=`
+    <div class="grid4">
+      <div class="metric"><label>Overall success</label><div class="val" style="color:${sc};">${oPct}%</div><div class="sub">all teams combined</div></div>
+      <div class="metric"><label>Teams / People</label><div class="val">${teams.length}<span style="font-size:16px;color:var(--faint);"> / ${allM.length}</span></div><div class="sub">in this project</div></div>
+      <div class="metric"><label>Critical gaps</label><div class="val" style="color:${crit>0?'#e05050':'#1fb885'};">${crit}</div><div class="sub">skills &lt; 85% covered</div></div>
+      <div class="metric"><label>Interfaces</label><div class="val">${connections.length}</div><div class="sub">team connections</div></div>
+    </div>
+    <div style="margin-bottom:1.5rem;"><h3>Per-team success</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">${tCards}</div></div>
+    <div class="grid2 mb15">
+      <div class="card"><h3>Skill coverage</h3><div style="position:relative;height:${Math.max(180,gaps.length*36+50)}px;"><canvas id="skillChart"></canvas></div></div>
+      <div class="card"><h3>Phase probabilities</h3><div style="position:relative;height:${Math.max(180,phases.length*58+50)}px;"><canvas id="phaseChart"></canvas></div></div>
+    </div>
+    <div class="card mb15"><h3>Gap analysis</h3>
+      <table><thead><tr><th>Skill</th><th class="c">Required</th><th class="c">Available</th><th class="c">Gap</th><th>Coverage</th><th class="c">Risk</th><th class="c">Teams</th></tr></thead>
+      <tbody>${gapRows}</tbody></table></div>
+    ${connections.length?`<div class="card mb15"><h3>Interface risk</h3>
+      <table><thead><tr><th>Interface</th><th class="c">Type</th><th class="c">Joint success</th><th>Shared skills</th></tr></thead>
+      <tbody>${connRisks}</tbody></table></div>`:''}
+    <div class="card"><h3>Phase timeline &amp; readiness</h3>${timeline}</div>`;
+
+  setTimeout(()=>{
+    dc('skillChart');dc('phaseChart');
+    const sc2=document.getElementById('skillChart');
+    if(sc2)charts.skillChart=new Chart(sc2,{type:'bar',data:{labels:gaps.map(g=>g.sk),datasets:[{label:'Required',data:gaps.map(g=>g.req),backgroundColor:'#ffffff12',borderColor:'#ffffff33',borderWidth:1,borderRadius:3},{label:'Available',data:gaps.map(g=>parseFloat(g.av.toFixed(2))),backgroundColor:gaps.map(g=>g.av>=g.req?'#1fb88566':g.av/g.req>=.7?'#f0a03066':'#e0505066'),borderColor:gaps.map(g=>g.av>=g.req?'#1fb885':g.av/g.req>=.7?'#f0a030':'#e05050'),borderWidth:1,borderRadius:3}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:10,grid:{color:'#ffffff08'},ticks:{color:'#8893a8',font:{size:11}}},y:{grid:{display:false},ticks:{color:'#8893a8',font:{size:11}}}}}});
+    const pc2=document.getElementById('phaseChart');
+    if(pc2)charts.phaseChart=new Chart(pc2,{type:'bar',data:{labels:phases.map(p=>p.name),datasets:[{data:(res.phase_prob||[]).map(p=>Math.round(p*100)),backgroundColor:phases.map((_,i)=>PCOLS[i%4]+'66'),borderColor:phases.map((_,i)=>PCOLS[i%4]),borderWidth:1,borderRadius:4}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{min:0,max:100,grid:{color:'#ffffff08'},ticks:{color:'#8893a8',font:{size:11},callback:v=>v+'%'}},y:{grid:{display:false},ticks:{color:'#8893a8',font:{size:11}}}}}});
+  },80);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// IMPORT PICKER
+// ════════════════════════════════════════════════════════════════════════════
+function openImportPicker(){ importChecked=new Set(); renderImportPicker(); document.getElementById('importOverlay').style.display='flex'; }
+function closeImportPicker(){ document.getElementById('importOverlay').style.display='none'; }
+
+function renderImportPicker(){
+  const proj=ap();if(!proj)return;
+  const usedOrgIds=new Set(proj.teams.flatMap(t=>t.members.filter(m=>m.orgId).map(m=>m.orgId)));
+  function pickRow(node,depth){
+    const col=ORG_TYPE_COLOR[node.type]||'#888';
+    const persons=flatPersonsUnder(node);
+    const allUsed=persons.length>0&&persons.every(p=>usedOrgIds.has(p.id));
+    const checked=importChecked.has(node.id);
+    const isP=node.type==='person';
+    const sub=isP?node.role:persons.length+' people';
+    const indent=depth>0?`padding-left:${depth*18}px`:'';
+    return`<div class="pick-row" style="${indent}">
+      <input type="checkbox" ${checked?'checked':''} ${allUsed&&!checked?'disabled title="All assigned"':''}
+        onchange="togglePick('${node.id}',this.checked);renderImportPicker()">
+      <div style="width:16px;height:16px;border-radius:3px;background:${col}18;color:${col};display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;">${ORG_TYPE_ICON[node.type]||'●'}</div>
+      <div><div style="font-size:13px;font-weight:${isP?500:600};">${node.name}</div>${sub?`<div style="font-size:11px;color:var(--faint);">${sub}</div>`:''}</div>
+    </div>${(!isP&&node.children?.length)?node.children.map(c=>pickRow(c,depth+1)).join(''):''}`;
+  }
+  const body=(S.globalOrg?.children||[]).map(n=>pickRow(n,0)).join('');
+  const selCount=[...importChecked].reduce((a,id)=>{const n=findNode(S.globalOrg,id);return a+flatPersonsUnder(n||{}).length;},0);
+  document.getElementById('importOverlay').innerHTML=`
+    <div class="import-panel">
+      <div class="import-header">
+        <div><div style="font-size:15px;font-weight:700;">Import from Organization</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">Adding to: <span style="color:${proj.color};font-weight:600;">${proj.teams.find(t=>t.id===proj.selTeamId)?.name||'team'}</span></div></div>
+        <button class="btn btn-danger btn-sm" onclick="closeImportPicker()">✕</button>
+      </div>
+      <div class="import-body">${body}</div>
+      <div class="import-footer">
+        <div style="font-size:13px;color:var(--muted);">${selCount} people selected</div>
+        <div class="flex-ac">
+          <select id="importTargetTeam">${proj.teams.map(t=>`<option value="${t.id}" ${t.id===proj.selTeamId?'selected':''}>${t.name}</option>`).join('')}</select>
+          <button class="btn" onclick="closeImportPicker()">Cancel</button>
+          <button class="btn btn-primary" onclick="confirmImport()">Import ${selCount>0?selCount+' people':'selected'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function togglePick(id,checked){
+  const node=findNode(S.globalOrg,id);if(!node)return;
+  const persons=flatPersonsUnder(node);
+  if(node.type==='person'){checked?importChecked.add(id):importChecked.delete(id);}
+  else{persons.forEach(p=>{checked?importChecked.add(p.id):importChecked.delete(p.id);});checked?importChecked.add(id):importChecked.delete(id);}
+}
+
+async function confirmImport(){
+  const proj=ap();if(!proj)return;
+  const targetId=document.getElementById('importTargetTeam').value;
+  const orgIds=[...importChecked].filter(id=>findNode(S.globalOrg,id)?.type==='person');
+  await POST(`/api/projects/${proj.id}/import-org`,{teamId:targetId,orgIds});
+  closeImportPicker();
+  await loadState();
+  renderTeams();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACTION DISPATCHERS  (call API → reload state → re-render)
+// ════════════════════════════════════════════════════════════════════════════
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+async function act(fn){ await fn(); await loadState(); rerender(); }
+
+const switchProject = async pid => {
+  await POST('/api/active-project',{projectId:pid});
+  await loadState(); rerender();
+};
+const addProject    = ()=>act(()=>POST('/api/projects',{}));
+const delProject    = pid=>act(()=>DELETE(`/api/projects/${pid}`));
+const patchProject  = (pid,d)=>act(()=>PATCH(`/api/projects/${pid}`,d));
+
+const addPhase      = pid=>act(()=>{
+  const proj=S.projects?.find(p=>p.id===pid);
+  const lastY=proj?.phases?.length?Math.max(...proj.phases.map(p=>p.y||60)):60;
+  return POST(`/api/projects/${pid}/phases`,{x:60,y:lastY+150});
+});
+const delPhase      = (pid,phid)=>act(()=>DELETE(`/api/projects/${pid}/phases/${phid}`));
+const patchPhase    = (pid,phid,d)=>act(()=>PATCH(`/api/projects/${pid}/phases/${phid}`,d));
+const movePhase     = (pid,phid,dir)=>act(()=>POST(`/api/projects/${pid}/phases/${phid}/move`,{direction:dir}));
+
+const addTeam       = pid=>act(()=>POST(`/api/projects/${pid}/teams`,{}));
+const delTeam       = (pid,tid)=>act(()=>DELETE(`/api/projects/${pid}/teams/${tid}`));
+const patchTeam     = (pid,tid,d)=>act(()=>PATCH(`/api/projects/${pid}/teams/${tid}`,d));
+const selectTeam    = (pid,tid)=>act(()=>PATCH(`/api/projects/${pid}`,{selTeamId:tid,selMemberId:null}));
+const selectMember  = (pid,mid)=>act(()=>PATCH(`/api/projects/${pid}`,{selMemberId:mid}));
+
+const addStandaloneMember = (pid,tid)=>act(()=>POST(`/api/projects/${pid}/teams/${tid}/members`,{}));
+const delMember     = (pid,mid)=>act(()=>DELETE(`/api/projects/${pid}/members/${mid}`));
+const patchMember   = (pid,mid,d)=>act(()=>PATCH(`/api/projects/${pid}/members/${mid}`,d));
+const moveMember    = (pid,mid,tid)=>act(()=>POST(`/api/projects/${pid}/members/${mid}/move`,{teamId:tid}));
+const unlinkMember  = (pid,mid)=>act(()=>POST(`/api/projects/${pid}/members/${mid}/unlink`,{}));
+
+const patchMemberSkill=(pid,mid,sk,type,val)=>{
+  PATCH(`/api/projects/${pid}/members/${mid}`,{skill:{name:sk,type,value:parseFloat(val)}});
+};
+
+const togglePhaseSkill=(pid,phid,sk)=>{
+  const proj=S.projects?.find(p=>p.id===pid);
+  const ph=proj?.phases?.find(p=>p.id===phid);if(!ph)return;
+  const req={...ph.required||{}};
+  if(req[sk]!==undefined)delete req[sk];else req[sk]=6;
+  act(()=>PATCH(`/api/projects/${pid}/phases/${phid}`,{required:req}));
+};
+
+const updatePhaseReq=(pid,phid,sk,val)=>{
+  const proj=S.projects?.find(p=>p.id===pid);
+  const ph=proj?.phases?.find(p=>p.id===phid);if(!ph)return;
+  ph.required={...ph.required,[sk]:parseFloat(val)};
+  PATCH(`/api/projects/${pid}/phases/${phid}`,{required:ph.required});
+};
+
+const addConnection   = (pid,d)=>act(()=>POST(`/api/projects/${pid}/connections`,d));
+const delConnection   = (pid,cid)=>act(()=>DELETE(`/api/projects/${pid}/connections/${cid}`));
+
+const addConnectionForm=pid=>{
+  const from=document.getElementById('connFrom').value;
+  const to=document.getElementById('connTo').value;
+  const type=document.getElementById('connType').value;
+  const label=document.getElementById('connLabel').value;
+  addConnection(pid,{from,to,type,label});
+};
+
+const toggleProjConnMode=async pid=>{
+  const proj=ap();if(!proj)return;
+  const mode=proj.orgMode==='connecting'?'none':'connecting';
+  orgConnFrom=null;
+  await PATCH(`/api/projects/${pid}`,{orgMode:mode});
+  await loadState();renderOrgChart();
+};
+
+const projNodeClick=async(pid,tid)=>{
+  const proj=ap();if(!proj||proj.orgMode!=='connecting')return;
+  if(!orgConnFrom){orgConnFrom=tid;renderOrgChart();return;}
+  if(orgConnFrom!==tid){
+    const label=prompt('Connection label:','')||'';
+    const type=prompt('Type: integration|dependency|handoff|reporting','integration')||'integration';
+    await addConnection(pid,{from:orgConnFrom,to:tid,label,type});
+    orgConnFrom=null;
+    await PATCH(`/api/projects/${pid}`,{orgMode:'none'});
+    await loadState();renderOrgChart();
+  }
+};
+
+const autoLayoutTeams=async pid=>{
+  const proj=S.projects?.find(p=>p.id===pid);if(!proj)return;
+  const cols=Math.ceil(Math.sqrt(proj.teams.length));
+  for(const[i,t]of proj.teams.entries()){
+    t.x=30+(i%cols)*(NODE_W+80);t.y=40+Math.floor(i/cols)*(NODE_H+90);
+    await PATCH(`/api/projects/${pid}/teams/${t.id}`,{x:t.x,y:t.y});
+  }
+  await loadState();renderOrgChart();
+};
+
+// Org hierarchy actions
+const addOrgChild   = async pid=>{
+  await POST(`/api/org/nodes`,{parentId:pid});
+  await loadState();renderOrgHier();
+};
+const deleteOrgNode = async nid=>{
+  if(!confirm('Delete this node and all its children?'))return;
+  await DELETE(`/api/org/nodes/${nid}`);
+  orgMapSelId=null;await loadState();renderOrgHier();renderSidebar();
+};
+const patchOrgNode  = async(nid,d)=>{
+  await PATCH(`/api/org/nodes/${nid}`,d);
+  await loadState();
+};
+const patchOrgSkill = async(nid,sk,type,val)=>{
+  await PATCH(`/api/org/nodes/${nid}`,{skill:{name:sk,type,value:parseFloat(val)}});
+  S.globalOrg=await GET('/api/org');
+};
+const orgMapSelect  = id=>{orgMapSelId=(orgMapSelId===id?null:id);renderOrgHier();};
+const toggleOrgNode = async nid=>{
+  await POST(`/api/org/toggle/${nid}`);
+  await loadState();renderOrgHier();
+};
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+(async()=>{
+  await loadState();
+  renderOverview();
+})();
+</script>
+<!-- PWA: install prompt banner -->
+<div id="installBanner" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;background:#1e2535;border:1px solid #2e3a50;border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:320px;">
+  <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Install TeamIQ</div>
+  <div style="font-size:12px;color:#8893a8;margin-bottom:12px;">Add to your desktop for quick access — works like a native app.</div>
+  <div style="display:flex;gap:8px;">
+    <button id="installBtn" style="flex:1;background:#0d7a57;border:1px solid #1fb885;color:#fff;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Install</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:transparent;border:1px solid #2e3a50;color:#8893a8;padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Later</button>
+  </div>
+</div>
+
+<script>
+/* Service worker registration */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registered', reg.scope))
+      .catch(err => console.warn('SW registration failed', err));
+  });
+}
+
+/* PWA install prompt */
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Show after 30s if user hasn't dismissed
+  setTimeout(() => {
+    if (deferredInstallPrompt) {
+      document.getElementById('installBanner').style.display = 'block';
+    }
+  }, 30000);
+});
+document.getElementById('installBtn')?.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  document.getElementById('installBanner').style.display = 'none';
+});
+
+/* Open on specific tab if URL has ?tab= param */
+window.addEventListener('DOMContentLoaded', () => {
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  if (tab) setTimeout(() => setTab(tab), 800);
+});
+</script>
+</body>
+</html>

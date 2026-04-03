@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TeamIQ — Offline</title>
+<style>
+  :root{--teal:#1fb885;--bg:#0f1117;--text:#e8eaf0;--muted:#8893a8;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);
+       display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;}
+  .card{max-width:400px;padding:3rem 2rem;}
+  .icon{font-size:56px;margin-bottom:1.5rem;}
+  h1{font-size:22px;font-weight:700;margin-bottom:.75rem;}
+  p{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:1.5rem;}
+  .btn{display:inline-block;padding:10px 24px;background:var(--teal);color:#fff;
+       border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;
+       text-decoration:none;}
+  .btn:hover{opacity:.85;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">📡</div>
+  <h1>You're offline</h1>
+  <p>TeamIQ needs a connection to your server to run simulations and load data.
+     Check your network and try again.</p>
+  <button class="btn" onclick="window.location.reload()">Retry</button>
+</div>
+</body>
+</html>

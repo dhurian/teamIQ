@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: teamiq
+    runtime: python
+    plan: free                        # upgrade to starter ($7/mo) for persistent disk
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DATA_DIR
+        value: /data                  # Render persistent disk mount point
+
+    # Persistent disk — keeps your SQLite database across deploys
+    # Requires Starter plan ($7/mo). Remove this section on free tier
+    # (data will reset on each deploy on the free plan).
+    disk:
+      name: teamiq-data
+      mountPath: /data
+      sizeGB: 1

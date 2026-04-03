@@ -22,8 +22,9 @@
   --font:'Segoe UI',system-ui,sans-serif;--mono:'Consolas','SF Mono',monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
+html{background:var(--bg);}
 body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
-.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh;background:var(--bg);}
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:hidden;}
 .sidebar-logo{padding:1.1rem 1.25rem .9rem;border-bottom:1px solid var(--border);flex-shrink:0;}
 .brand{font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--teal);text-transform:uppercase;}
@@ -46,7 +47,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14
 .nav-item.active{color:var(--teal);border-left-color:var(--teal);background:rgba(31,184,133,.08);}
 .nav-icon{font-size:15px;width:18px;text-align:center;}
 .nav-group-label{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;padding:10px 1.25rem 4px;}
-.main{padding:2rem;max-width:1350px;}
+.main{padding:2rem;min-width:0;width:100%;}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem;}
 .card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:1rem;}
 .metric{background:var(--bg3);border-radius:8px;padding:1rem 1.25rem;}
@@ -150,6 +151,7 @@ tr:last-child td{border-bottom:none;}
         <div class="nav-group-label" id="projTabsLabel" style="margin-top:6px;">Current Project</div>
         <div class="nav-item" onclick="setTab('teams')"><span class="nav-icon">👥</span>Teams</div>
         <div class="nav-item" onclick="setTab('phases')"><span class="nav-icon">📋</span>Phases</div>
+        <div class="nav-item" onclick="setTab('timeline')"><span class="nav-icon">📅</span>Timeline</div>
         <div class="nav-item" onclick="setTab('orgchart')"><span class="nav-icon">🔗</span>Org Chart</div>
         <div class="nav-item" onclick="setTab('bizcase')"><span class="nav-icon">💼</span>Business Case</div>
         <div class="nav-item" onclick="setTab('reqs')"><span class="nav-icon">📐</span>Requirements</div>
@@ -162,6 +164,7 @@ tr:last-child td{border-bottom:none;}
     <div id="panelOrgHier"   class="panel"></div>
     <div id="panelTeams"     class="panel"></div>
     <div id="panelPhases"    class="panel"></div>
+    <div id="panelTimeline"  class="panel"></div>
     <div id="panelOrgchart"  class="panel"></div>
     <div id="panelBizcase"   class="panel"></div>
     <div id="panelReqs"      class="panel"></div>
@@ -192,8 +195,21 @@ let activeTab = 'overview';
 let orgHierView = 'map';
 let orgMapPan = {x:60,y:50}, orgMapZoom = 1, orgMapDragging = null, orgMapSelId = null;
 let orgNodeDrag = null, orgConnFrom = null;
+let orgPan={x:20,y:20}, orgZoom=1, orgPanning=null, orgEventsSetup=false;
 let charts = {};
 let importChecked = new Set();
+let ganttCollapsed = new Set();
+let ganttZoom = 1;
+let ganttSelId = null;        // selected item id (phase / subphase / WP)
+let ganttSelType = null;      // 'phase' | 'subphase' | 'wp'
+let ganttBarResizeDrag = null;
+let ganttBarResizeSetup = false;
+let phaseSplit = 0.5;        // left-pane width fraction (0.15–0.85)
+let phaseCardsMin = false;   // cards pane minimized
+let phaseDiagMin  = false;   // diagram pane minimized
+let phaseSplitSetup = false; // window drag listeners attached once
+let ganttHeight = 440;       // gantt chart height px (user-resizable)
+let ganttResizeSetup = false;
 
 // ── API helpers ────────────────────────────────────────────────────────────
 async function api(method, path, body){
@@ -246,10 +262,10 @@ function renderSidebar(){
 // ── Tab routing ────────────────────────────────────────────────────────────
 function setTab(tab){
   activeTab = tab;
-  const labels = {overview:'Overview',orghier:'Organization',teams:'Teams',phases:'Phases',orgchart:'Org Chart',bizcase:'Business Case',reqs:'Requirements',analysis:'Analysis'};
+  const labels = {overview:'Overview',orghier:'Organization',teams:'Teams',phases:'Phases',timeline:'Timeline',orgchart:'Org Chart',bizcase:'Business Case',reqs:'Requirements',analysis:'Analysis'};
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.textContent.trim()===labels[tab]));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  const pm = {overview:'panelOverview',orghier:'panelOrgHier',teams:'panelTeams',phases:'panelPhases',orgchart:'panelOrgchart',bizcase:'panelBizcase',reqs:'panelReqs',analysis:'panelAnalysis'};
+  const pm = {overview:'panelOverview',orghier:'panelOrgHier',teams:'panelTeams',phases:'panelPhases',timeline:'panelTimeline',orgchart:'panelOrgchart',bizcase:'panelBizcase',reqs:'panelReqs',analysis:'panelAnalysis'};
   document.getElementById(pm[tab])?.classList.add('active');
   rerender(tab);
 }
@@ -260,6 +276,7 @@ function rerender(tab){
   else if(t==='orghier')  renderOrgHier();
   else if(t==='teams')    renderTeams();
   else if(t==='phases')   renderPhases();
+  else if(t==='timeline') renderTimeline();
   else if(t==='orgchart') renderOrgChart();
   else if(t==='bizcase')  renderBizCase();
   else if(t==='reqs')     renderReqs();
@@ -746,7 +763,12 @@ function renderPhases(){
   const bar = phases.map((ph,i)=>`<div class="phase-seg" style="flex:${Math.max(.1,phaseWeeks(ph))};background:${PCOLS[i%4]}22;"><span style="color:${PCOLS[i%4]};">${ph.name} (${durationLabel(ph)})</span></div>`).join('');
 
   const cards = phases.map((ph,pi)=>phaseCard(ph,pi,proj)).join('');
-  const diag  = buildPhaseDiagram(proj);
+  const phH   = Math.max(380, window.innerHeight - 218);
+  const lFlex = phaseCardsMin ? '0 0 30px' : phaseDiagMin ? '1 1 0' : `${phaseSplit} 1 0`;
+  const rFlex = phaseDiagMin  ? '0 0 30px' : phaseCardsMin ? '1 1 0' : `${1-phaseSplit} 1 0`;
+  const showHandle = !phaseCardsMin && !phaseDiagMin;
+  const diagH = Math.max(200, phH - 64);
+  const diagSvg = buildPhaseDiagram(proj, diagH);
 
   document.getElementById('panelPhases').innerHTML=`
     <div class="flex-between mb15" style="flex-shrink:0;">
@@ -761,12 +783,62 @@ function renderPhases(){
       <button class="btn btn-primary" onclick="addPhase('${proj.id}')">+ Add Phase</button>
     </div>
     <div class="phase-bar mb15" style="flex-shrink:0;">${bar}</div>
-    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;">
-      <div style="overflow-y:auto;max-height:calc(100vh - 240px);">${cards}</div>
-      <div style="position:sticky;top:0;">${diag}</div>
+    <div style="display:flex;height:${phH}px;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--bg2);">
+
+      <!-- Left: Phase Cards -->
+      <div data-phase-pane="left" style="flex:${lFlex};display:flex;flex-direction:column;min-width:0;border-right:1px solid var(--border);overflow:hidden;">
+        ${phaseCardsMin
+          ? `<div onclick="phaseCardsMin=false;renderPhases()" title="Restore"
+               style="display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:8px;height:100%;cursor:pointer;background:var(--bg3);">
+               <span style="font-size:12px;color:var(--muted);">▶</span>
+               <span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;">Cards</span>
+             </div>`
+          : `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;">
+               <span style="font-size:11px;font-weight:600;color:var(--muted);">Phase Cards</span>
+               <button class="btn btn-sm" onclick="phaseCardsMin=true;renderPhases()" title="Minimize">—</button>
+             </div>
+             <div style="overflow-y:auto;flex:1;">${cards}</div>`
+        }
+      </div>
+
+      <!-- Drag handle -->
+      ${showHandle ? `<div id="phaseDragHandle" onmousedown="startPhaseSplit(event)"
+          style="width:5px;flex-shrink:0;cursor:col-resize;background:var(--border);display:flex;align-items:center;justify-content:center;transition:background .12s;"
+          onmouseenter="this.style.background='var(--teal)'" onmouseleave="this.style.background='var(--border)'">
+          <div style="width:2px;height:32px;border-radius:1px;background:var(--border2);pointer-events:none;"></div>
+        </div>` : ''}
+
+      <!-- Right: Phase Diagram -->
+      <div data-phase-pane="right" style="flex:${rFlex};display:flex;flex-direction:column;min-width:0;overflow:hidden;">
+        ${phaseDiagMin
+          ? `<div onclick="phaseDiagMin=false;renderPhases()" title="Restore"
+               style="display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:8px;height:100%;cursor:pointer;background:var(--bg3);">
+               <span style="font-size:12px;color:var(--muted);">◀</span>
+               <span style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.07em;">Diagram</span>
+             </div>`
+          : `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;">
+               <span style="font-size:11px;font-weight:600;color:var(--muted);">Phase Diagram</span>
+               <div class="flex-ac">
+                 <button class="btn btn-sm ${pdMode==='connecting'?'btn-active':''}" onclick="togglePhDiagConnMode('${proj.id}')">${pdMode==='connecting'?'● Connecting…':'⊕ Connect'}</button>
+                 <button class="btn btn-sm" onclick="phDiagAutoLayout('${proj.id}')">↺ Auto</button>
+                 <button class="btn btn-sm" onclick="pdZoom=Math.min(2,pdZoom+.15);phUpdateTransform()">+</button>
+                 <button class="btn btn-sm" onclick="pdZoom=Math.max(.3,pdZoom-.15);phUpdateTransform()">−</button>
+                 <button class="btn btn-sm" onclick="pdPan={x:20,y:20};pdZoom=1;phUpdateTransform()">⊙</button>
+                 <button class="btn btn-sm" onclick="phaseDiagMin=true;renderPhases()" title="Minimize">—</button>
+               </div>
+             </div>
+             <div style="font-size:11px;color:var(--faint);padding:4px 12px;border-bottom:1px solid var(--border);flex-shrink:0;">
+               ${pdMode==='connecting'
+                 ? '<span style="color:var(--blue);">Click first node → click second to connect</span>'
+                 : 'Drag nodes · ⊕ Connect to draw edges · Click edge to remove · Click node to select'}
+             </div>
+             ${diagSvg}`
+        }
+      </div>
     </div>`;
 
   initPhaseDiagramEvents(proj.id);
+  initPhaseSplitEvents();
 }
 
 // ── Phase card (recursive) ────────────────────────────────────────────────────
@@ -898,7 +970,7 @@ function wpRow(wp, proj, ph){
 }
 
 // ── Diagram ───────────────────────────────────────────────────────────────────
-function buildPhaseDiagram(proj){
+function buildPhaseDiagram(proj, svgH=520){
   const {phases, phaseEdges=[]} = proj;
   phases.forEach((ph,i)=>{ ph.x=_phX(ph,i); ph.y=_phY(ph,i); });
   const phMap = Object.fromEntries(phases.map(p=>[p.id,p]));
@@ -948,32 +1020,16 @@ function buildPhaseDiagram(proj){
 
   const ghostSvg=`<line id="phGhost" stroke="#4a9eff" stroke-width="2" stroke-dasharray="6,3" display="none" x1="0" y1="0" x2="0" y2="0"/>`;
 
-  return`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);">
-      <span style="font-size:12px;font-weight:600;color:var(--muted);">Phase Diagram</span>
-      <div class="flex-ac">
-        <button class="btn btn-sm ${pdMode==='connecting'?'btn-active':''}" onclick="togglePhDiagConnMode('${proj.id}')">${pdMode==='connecting'?'● Connecting…':'⊕ Connect'}</button>
-        <button class="btn btn-sm" onclick="phDiagAutoLayout('${proj.id}')">↺ Auto</button>
-        <button class="btn btn-sm" onclick="pdZoom=Math.min(2,pdZoom+.15);phUpdateTransform()">+</button>
-        <button class="btn btn-sm" onclick="pdZoom=Math.max(.3,pdZoom-.15);phUpdateTransform()">−</button>
-        <button class="btn btn-sm" onclick="pdPan={x:20,y:20};pdZoom=1;phUpdateTransform()">⊙</button>
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--faint);padding:5px 14px;border-bottom:1px solid var(--border);">
-      ${pdMode==='connecting'?'<span style="color:var(--blue);">Click first node → click second to connect</span>'
-        :'Drag nodes · ⊕ Connect to draw edges · Click edge to remove · Click node to select'}
-    </div>
-    <svg id="phDiagSvg" width="100%" height="520"
-         style="background:var(--bg3);display:block;cursor:${pdMode==='connecting'?'crosshair':'grab'}">
-      <defs><marker id="pharr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-        <polygon points="0 0,8 3,0 6" fill="#4a9eff88"/></marker></defs>
-      <g id="phDiagG" transform="translate(${pdPan.x},${pdPan.y}) scale(${pdZoom})">
-        <g id="phEdgesG">${edgesSvg}</g>
-        <g id="phNodesG">${nodesSvg}</g>
-        ${ghostSvg}
-      </g>
-    </svg>
-  </div>`;
+  return`<svg id="phDiagSvg" width="100%" height="${svgH}"
+       style="display:block;background:var(--bg3);cursor:${pdMode==='connecting'?'crosshair':'grab'}">
+    <defs><marker id="pharr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#4a9eff88"/></marker></defs>
+    <g id="phDiagG" transform="translate(${pdPan.x},${pdPan.y}) scale(${pdZoom})">
+      <g id="phEdgesG">${edgesSvg}</g>
+      <g id="phNodesG">${nodesSvg}</g>
+      ${ghostSvg}
+    </g>
+  </svg>`;
 }
 
 function phUpdateTransform(){
@@ -1131,6 +1187,495 @@ async function phDiagAutoLayout(pid){
 
 
 // ════════════════════════════════════════════════════════════════════════════
+// TIMELINE / GANTT VIEW
+// ════════════════════════════════════════════════════════════════════════════
+
+const TO_DAYS = {days:1, weeks:7, months:30.44, years:365.25};
+function phaseDays(ph){ return parseFloat(ph.value??ph.weeks??2)*((ph.unit&&TO_DAYS[ph.unit])||7); }
+
+function sortedPhasesGantt(phases, phaseEdges){
+  const ids=phases.map(p=>p.id);
+  const inDeg=Object.fromEntries(ids.map(id=>[id,0]));
+  const adj=Object.fromEntries(ids.map(id=>[id,[]]));
+  for(const e of phaseEdges||[]){
+    if(inDeg[e.to]!==undefined&&adj[e.from]!==undefined){inDeg[e.to]++;adj[e.from].push(e.to);}
+  }
+  const q=[...ids.filter(id=>inDeg[id]===0)];
+  const sorted=[],visited=new Set();
+  while(q.length){
+    const id=q.shift();if(visited.has(id))continue;visited.add(id);sorted.push(id);
+    for(const nid of adj[id]){inDeg[nid]--;if(inDeg[nid]===0)q.push(nid);}
+  }
+  for(const id of ids)if(!sorted.includes(id))sorted.push(id);
+  return sorted.map(id=>phases.find(p=>p.id===id)).filter(Boolean);
+}
+
+function buildGanttRows(proj){
+  const phases=sortedPhasesGantt(proj.phases||[],proj.phaseEdges||[]);
+  const phEndDay={};let prevEnd=0;const rows=[];
+
+  function addChildren(ph,depth,startDay,rootPh){
+    const col=PCOLS[(proj.phases.findIndex(p=>p.id===rootPh.id)%4+4)%4];
+    if(!ganttCollapsed.has(ph.id)){
+      let sub=startDay;
+      for(const child of ph.children||[]){
+        const dur=phaseDays(child),end=sub+dur;
+        rows.push({ph:child,depth,startDay:sub,endDay:end,type:'subphase',col});
+        addChildren(child,depth+1,sub,rootPh);
+        sub+=dur;
+      }
+      for(const wp of ph.workPackages||[]){
+        rows.push({ph,wp,depth,startDay,endDay:startDay+phaseDays(ph),type:'wp',col});
+      }
+    }
+  }
+
+  for(const ph of phases){
+    const preds=(proj.phaseEdges||[]).filter(e=>e.to===ph.id&&phEndDay[e.from]!==undefined).map(e=>phEndDay[e.from]);
+    const startDay=preds.length?Math.max(...preds):prevEnd;
+    const dur=phaseDays(ph),endDay=startDay+dur;
+    phEndDay[ph.id]=endDay;prevEnd=endDay;
+    const pi=proj.phases.findIndex(p=>p.id===ph.id);
+    const col=PCOLS[(pi%4+4)%4];
+    rows.push({ph,depth:0,startDay,endDay,type:'phase',col});
+    addChildren(ph,1,startDay,ph);
+  }
+  return {rows,totalDays:Math.max(prevEnd,1)};
+}
+
+// ── Gantt helpers ─────────────────────────────────────────────────────────────
+function daysToValueUnit(days){
+  days=Math.max(1,Math.round(days*2)/2);
+  if(days<=14)return{value:days,unit:'days'};
+  const w=Math.round(days/7*2)/2;
+  if(w<=12)return{value:w,unit:'weeks'};
+  const m=Math.round(days/30.44*2)/2;
+  if(m<=24)return{value:m,unit:'months'};
+  return{value:Math.round(days/365.25*2)/2,unit:'years'};
+}
+
+function openGanttDetail(id,type){
+  ganttSelId=(ganttSelId===id)?null:id;
+  ganttSelType=type;
+  renderTimeline();
+}
+
+function buildGanttDetailHtml(proj){
+  const pid=proj.id;
+  function findPhRec(phases){
+    for(const p of phases){if(p.id===ganttSelId)return p;const f=findPhRec(p.children||[]);if(f)return f;}return null;
+  }
+  const closeBtn=`<button onclick="ganttSelId=null;renderTimeline()" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:16px;line-height:1;">✕</button>`;
+
+  if(ganttSelType==='wp'){
+    let wp=null,parentPhid=null;
+    (function scan(phases){for(const ph of phases){for(const w of ph.workPackages||[]){if(w.id===ganttSelId){wp=w;parentPhid=ph.id;return;}}scan(ph.children||[]);}})(proj.phases||[]);
+    if(!wp)return`<div style="padding:1rem;color:var(--faint);">Not found</div>`;
+    return`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;">
+        <span style="font-size:11px;font-weight:600;color:var(--muted);">Work Package</span>${closeBtn}
+      </div>
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Name</div>
+          <input type="text" value="${wp.name}" onchange="patchWP('${pid}','${wp.id}',{name:this.value})"
+            style="width:100%;font-size:13px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;">
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Status</div>
+          <select onchange="patchWP('${pid}','${wp.id}',{status:this.value})"
+            style="width:100%;font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;">
+            ${WP_STATUSES.map(s=>`<option value="${s}"${s===wp.status?' selected':''}>${WP_LABELS[s]||s}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Description</div>
+          <textarea onchange="patchWP('${pid}','${wp.id}',{description:this.value})"
+            style="width:100%;font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;resize:vertical;min-height:64px;">${wp.description||''}</textarea>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Deliverables <span style="color:var(--faint);font-size:9px;">(comma-separated)</span></div>
+          <input type="text" value="${(wp.deliverables||[]).join(', ')}"
+            onchange="patchWP('${pid}','${wp.id}',{deliverables:this.value.split(',').map(s=>s.trim()).filter(Boolean)})"
+            style="width:100%;font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;">
+        </div>
+        <div style="padding-top:8px;border-top:1px solid var(--border);">
+          <button onclick="delWP('${pid}','${wp.id}')" class="btn btn-danger btn-sm" style="width:100%;">Delete Work Package</button>
+        </div>
+      </div>`;
+  }
+
+  // Phase / subphase
+  const ph=findPhRec(proj.phases||[]);
+  if(!ph)return`<div style="padding:1rem;color:var(--faint);">Not found</div>`;
+  const isTop=proj.phases.some(p=>p.id===ph.id);
+  const label=isTop?'Phase':'Subphase';
+  return`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--bg3);flex-shrink:0;">
+      <span style="font-size:11px;font-weight:600;color:var(--muted);">${label}</span>${closeBtn}
+    </div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Name</div>
+        <input type="text" value="${ph.name}" onchange="patchPhase('${pid}','${ph.id}',{name:this.value})"
+          style="width:100%;font-size:13px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;">
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--faint);text-transform:uppercase;margin-bottom:4px;">Duration</div>
+        <div style="display:flex;gap:6px;">
+          <input type="number" min="0.1" step="0.5" value="${ph.value??ph.weeks??2}"
+            onchange="patchPhase('${pid}','${ph.id}',{value:parseFloat(this.value)})"
+            style="flex:1;min-width:0;font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 8px;outline:none;">
+          <select onchange="patchPhase('${pid}','${ph.id}',{unit:this.value})"
+            style="font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:5px 6px;outline:none;">
+            ${DURATION_UNITS.map(u=>`<option value="${u}"${u===(ph.unit||'weeks')?' selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="addSubphase('${pid}','${ph.id}')" class="btn btn-sm" style="flex:1;">+ Subphase</button>
+        <button onclick="addWP('${pid}','${ph.id}')" class="btn btn-sm" style="flex:1;">+ Work Pkg</button>
+      </div>
+      <div style="padding-top:8px;border-top:1px solid var(--border);">
+        <button onclick="delPhase('${pid}','${ph.id}')" class="btn btn-danger btn-sm" style="width:100%;">Delete ${label}</button>
+      </div>
+    </div>`;
+}
+
+// ── Gantt bar resize (drag right edge) ────────────────────────────────────────
+function initGanttBarResizeEvents(){
+  if(ganttBarResizeSetup)return;
+  ganttBarResizeSetup=true;
+  document.addEventListener('mousedown',e=>{
+    const h=e.target.closest?.('.g-resize');if(!h)return;
+    e.preventDefault();e.stopPropagation();
+    const DAY_W=Math.max(3,Math.round(14*ganttZoom));
+    ganttBarResizeDrag={phid:h.dataset.phid,pid:h.dataset.pid,
+      startDays:parseFloat(h.dataset.days),startX:e.clientX,DAY_W,currentDays:parseFloat(h.dataset.days)};
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!ganttBarResizeDrag)return;
+    const{startX,startDays,DAY_W}=ganttBarResizeDrag;
+    ganttBarResizeDrag.currentDays=Math.max(1,startDays+(e.clientX-startX)/DAY_W);
+    // Live visual update
+    const g=document.querySelector(`[data-gbar="${ganttBarResizeDrag.phid}"]`);
+    if(!g)return;
+    const rects=[...g.querySelectorAll('rect')];
+    const bar=rects[0];if(!bar)return;
+    const newW=Math.max(4,Math.round(ganttBarResizeDrag.currentDays*DAY_W));
+    bar.setAttribute('width',newW);
+    const handle=g.querySelector('.g-resize');
+    if(handle)handle.setAttribute('x',parseFloat(bar.getAttribute('x'))+Math.max(0,newW-7));
+  });
+  window.addEventListener('mouseup',async()=>{
+    if(!ganttBarResizeDrag)return;
+    const{phid,pid,currentDays}=ganttBarResizeDrag;
+    ganttBarResizeDrag=null;
+    const{value,unit}=daysToValueUnit(currentDays);
+    await PATCH(`/api/projects/${pid}/phases/${phid}`,{value,unit});
+    await loadState();renderTimeline();
+  });
+}
+
+function renderTimeline(){
+  const proj=ap();if(!proj)return;
+  const startDateStr=proj.startDate||new Date().toISOString().slice(0,10);
+  const startMs=new Date(startDateStr).getTime();
+  const {rows,totalDays}=buildGanttRows(proj);
+
+  const ROW_H=34,LABEL_W=224,DAY_W=Math.max(3,Math.round(14*ganttZoom));
+  const HEADER_H=44;
+  const svgW=Math.max(600,Math.ceil(totalDays*DAY_W)+60);
+  const svgH=rows.length*ROW_H;
+  const dx=d=>Math.round(d*DAY_W);
+  const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const tickDays=DAY_W>=12?7:DAY_W>=6?14:30;
+
+  let headerSvg='',gridLines='';
+  let d=0,lastMonth=-1;
+  while(d<=totalDays+tickDays){
+    const date=new Date(startMs+d*86400000);
+    const month=date.getMonth(),x=dx(d);
+    if(month!==lastMonth){
+      lastMonth=month;
+      headerSvg+=`<text x="${x+3}" y="15" fill="var(--muted)" font-size="10" font-weight="600" font-family="var(--font)">${MONTHS[month]} ${date.getFullYear()}</text>
+        <line x1="${x}" y1="0" x2="${x}" y2="${HEADER_H}" stroke="var(--border2)" stroke-width="1"/>`;
+      gridLines+=`<line x1="${x}" y1="0" x2="${x}" y2="${svgH}" stroke="var(--border2)" stroke-width="0.8"/>`;
+    }
+    if(tickDays<=14&&d>0){
+      const wn=Math.ceil(d/7);
+      headerSvg+=`<text x="${x+2}" y="32" fill="var(--faint)" font-size="9" font-family="var(--mono)">W${wn}</text>
+        <line x1="${x}" y1="20" x2="${x}" y2="${HEADER_H}" stroke="var(--border)" stroke-width="0.5"/>`;
+      gridLines+=`<line x1="${x}" y1="0" x2="${x}" y2="${svgH}" stroke="var(--border)" stroke-width="0.4" stroke-dasharray="2,5" opacity="0.5"/>`;
+    }
+    d+=tickDays;
+  }
+
+  // Today marker
+  const todayDay=Math.round((Date.now()-startMs)/86400000);
+  const todayMarker=(todayDay>=0&&todayDay<=totalDays+60)?
+    `<line x1="${dx(todayDay)}" y1="0" x2="${dx(todayDay)}" y2="${svgH}" stroke="#e05050" stroke-width="1.5" opacity="0.75"/>
+     <polygon points="${dx(todayDay)-4},0 ${dx(todayDay)+4},0 ${dx(todayDay)},6" fill="#e05050" opacity="0.75"/>`:'';
+
+  // ── Build rows ───────────────────────────────────────────────────────────────
+  // Inline action button style (shared)
+  const aBtnStyle=`background:none;border:none;cursor:pointer;padding:1px 4px;font-size:11px;line-height:1;border-radius:3px;`;
+  let labelRows='',rowsSvg='';
+
+  rows.forEach((row,i)=>{
+    const y=i*ROW_H,midY=ROW_H/2,barY=4,barH=ROW_H-8;
+    const x1=dx(row.startDay),barW=Math.max(4,dx(row.endDay)-x1);
+    const {col}=row;
+    const stripe=i%2===1;
+
+    if(stripe) rowsSvg+=`<rect x="0" y="${y}" width="${svgW}" height="${ROW_H}" fill="rgba(255,255,255,0.018)"/>`;
+
+    if(row.type==='phase'){
+      const isSel=ganttSelId===row.ph.id;
+      const hasKids=(row.ph.children||[]).length>0||(row.ph.workPackages||[]).length>0;
+      const toggle=ganttCollapsed.has(row.ph.id)?'▸':'▾';
+      rowsSvg+=`<g transform="translate(0,${y})" data-gbar="${row.ph.id}">
+        <rect x="${x1}" y="${barY}" width="${barW}" height="${barH}" rx="4"
+          fill="${col}${isSel?'40':'28'}" stroke="${col}" stroke-width="${isSel?2.5:1.5}"/>
+        ${barW>44?`<text x="${x1+7}" y="${midY+4}" fill="${col}" font-size="11" font-weight="600"
+          font-family="var(--font)" style="pointer-events:none"
+          >${row.ph.name.length>Math.floor(barW/7)?row.ph.name.slice(0,Math.floor(barW/7))+'…':row.ph.name}</text>`:''}
+        <rect class="g-resize" data-phid="${row.ph.id}" data-pid="${proj.id}" data-days="${row.endDay-row.startDay}"
+          x="${x1+Math.max(0,barW-8)}" y="${barY}" width="8" height="${barH}" rx="2"
+          fill="${col}55" style="cursor:ew-resize;" title="Drag to resize"/>
+      </g>`;
+      labelRows+=`<div style="height:${ROW_H}px;display:flex;align-items:center;padding-left:6px;
+          border-bottom:1px solid var(--border);gap:3px;cursor:pointer;
+          background:${isSel?col+'18':stripe?'rgba(255,255,255,0.018)':'transparent'};
+          border-left:${isSel?`2px solid ${col}`:'2px solid transparent'};"
+        ondblclick="openGanttDetail('${row.ph.id}','phase')"
+        onmouseenter="this.querySelector('.gla').style.display='flex'"
+        onmouseleave="this.querySelector('.gla').style.display='none'">
+        <span style="font-size:10px;color:var(--muted);width:12px;flex-shrink:0;"
+          onclick="event.stopPropagation();toggleGanttRow('${row.ph.id}')">${hasKids?toggle:''}</span>
+        <div style="width:9px;height:9px;border-radius:2px;background:${col};flex-shrink:0;"></div>
+        <span style="font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;
+          text-overflow:ellipsis;flex:1;min-width:0;" title="${row.ph.name}">${row.ph.name}</span>
+        <div class="gla" style="display:none;align-items:center;gap:1px;flex-shrink:0;">
+          <button onclick="event.stopPropagation();addSubphase('${proj.id}','${row.ph.id}')"
+            title="Add subphase" style="${aBtnStyle}color:var(--teal)">⊕</button>
+          <button onclick="event.stopPropagation();addWP('${proj.id}','${row.ph.id}')"
+            title="Add work package" style="${aBtnStyle}color:var(--muted)">📦</button>
+          <button onclick="event.stopPropagation();delPhase('${proj.id}','${row.ph.id}')"
+            title="Delete" style="${aBtnStyle}color:var(--red)">✕</button>
+        </div>
+      </div>`;
+
+    } else if(row.type==='subphase'){
+      const isSel=ganttSelId===row.ph.id;
+      const indent=row.depth*14;
+      const hasKids=(row.ph.children||[]).length>0||(row.ph.workPackages||[]).length>0;
+      const toggle=ganttCollapsed.has(row.ph.id)?'▸':'▾';
+      rowsSvg+=`<g transform="translate(0,${y})" data-gbar="${row.ph.id}">
+        <rect x="${x1}" y="${barY+3}" width="${barW}" height="${barH-6}" rx="3"
+          fill="${col}${isSel?'30':'18'}" stroke="${col}${isSel?'':'99'}" stroke-width="${isSel?1.5:1}"/>
+        ${barW>38?`<text x="${x1+5}" y="${midY+3}" fill="${col}cc" font-size="10"
+          font-family="var(--font)" style="pointer-events:none"
+          >${row.ph.name.length>Math.floor(barW/6.5)?row.ph.name.slice(0,Math.floor(barW/6.5))+'…':row.ph.name}</text>`:''}
+        <rect class="g-resize" data-phid="${row.ph.id}" data-pid="${proj.id}" data-days="${row.endDay-row.startDay}"
+          x="${x1+Math.max(0,barW-8)}" y="${barY+3}" width="8" height="${barH-6}" rx="2"
+          fill="${col}55" style="cursor:ew-resize;"/>
+      </g>`;
+      labelRows+=`<div style="height:${ROW_H}px;display:flex;align-items:center;padding-left:${indent+6}px;
+          border-bottom:1px solid var(--border);gap:3px;cursor:pointer;
+          background:${isSel?col+'14':stripe?'rgba(14,18,26,0.6)':'var(--bg3)'};
+          border-left:${isSel?`2px solid ${col}`:'2px solid transparent'};"
+        ondblclick="openGanttDetail('${row.ph.id}','subphase')"
+        onmouseenter="this.querySelector('.gla').style.display='flex'"
+        onmouseleave="this.querySelector('.gla').style.display='none'">
+        <span style="font-size:10px;color:var(--faint);width:12px;flex-shrink:0;"
+          onclick="event.stopPropagation();toggleGanttRow('${row.ph.id}')">${hasKids?toggle:''}</span>
+        <div style="width:7px;height:7px;border-radius:1px;background:${col}88;flex-shrink:0;"></div>
+        <span style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;
+          text-overflow:ellipsis;flex:1;min-width:0;" title="${row.ph.name}">${row.ph.name}</span>
+        <div class="gla" style="display:none;align-items:center;gap:1px;flex-shrink:0;">
+          <button onclick="event.stopPropagation();addWP('${proj.id}','${row.ph.id}')"
+            title="Add work package" style="${aBtnStyle}color:var(--muted)">📦</button>
+          <button onclick="event.stopPropagation();delPhase('${proj.id}','${row.ph.id}')"
+            title="Delete" style="${aBtnStyle}color:var(--red)">✕</button>
+        </div>
+      </div>`;
+
+    } else if(row.type==='wp'){
+      const isSel=ganttSelId===row.wp.id;
+      const indent=row.depth*14;
+      const wpcol=WP_COLS[row.wp.status]||'#4a556a';
+      rowsSvg+=`<g transform="translate(0,${y})">
+        <rect x="${x1}" y="${barY+7}" width="${barW}" height="${barH-14}" rx="2"
+          fill="${wpcol}${isSel?'55':'38'}" stroke="${wpcol}99" stroke-width="${isSel?1.5:1}"/>
+      </g>`;
+      labelRows+=`<div style="height:${ROW_H}px;display:flex;align-items:center;padding-left:${indent+6}px;
+          border-bottom:1px solid var(--border);gap:3px;cursor:pointer;
+          background:${isSel?wpcol+'14':stripe?'rgba(14,18,26,0.6)':'var(--bg3)'};
+          border-left:${isSel?`2px solid ${wpcol}`:'2px solid transparent'};"
+        ondblclick="openGanttDetail('${row.wp.id}','wp')"
+        onmouseenter="this.querySelector('.gla').style.display='flex'"
+        onmouseleave="this.querySelector('.gla').style.display='none'">
+        <div style="width:6px;height:6px;border-radius:50%;background:${wpcol};flex-shrink:0;"></div>
+        <span style="font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;
+          text-overflow:ellipsis;flex:1;min-width:0;" title="${row.wp.name}">${row.wp.name}</span>
+        <span style="font-size:9px;color:${wpcol};flex-shrink:0;">${WP_LABELS[row.wp.status]||''}</span>
+        <div class="gla" style="display:none;align-items:center;gap:1px;flex-shrink:0;">
+          <button onclick="event.stopPropagation();delWP('${proj.id}','${row.wp.id}')"
+            title="Delete" style="${aBtnStyle}color:var(--red)">✕</button>
+        </div>
+      </div>`;
+    }
+  });
+
+  // ── Assemble HTML ─────────────────────────────────────────────────────────────
+  const endMs=startMs+totalDays*86400000;
+  const fmtDate=ms=>new Date(ms).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  const legendHtml=Object.entries(WP_COLS).map(([s,c])=>`
+    <div style="display:flex;align-items:center;gap:5px;">
+      <div style="width:9px;height:9px;border-radius:50%;background:${c};"></div>
+      <span style="font-size:11px;color:var(--muted);">WP: ${WP_LABELS[s]}</span>
+    </div>`).join('');
+  const sideHtml=ganttSelId?`
+    <div style="width:264px;flex-shrink:0;border:1px solid var(--border);border-radius:10px;
+      background:var(--bg2);overflow-y:auto;max-height:${ganttHeight+HEADER_H+6}px;
+      display:flex;flex-direction:column;">
+      ${buildGanttDetailHtml(proj)}
+    </div>`:'';
+
+  document.getElementById('panelTimeline').innerHTML=`
+    <div class="flex-between mb15">
+      <div>
+        <h2 style="margin:0 0 4px;">Timeline</h2>
+        <div style="font-size:12px;color:var(--muted);">
+          Project: <span style="color:${proj.color};font-weight:600;">${proj.name}</span>
+          &nbsp;·&nbsp; ${fmtDate(startMs)} → ${fmtDate(endMs)} &nbsp;·&nbsp; ${Math.round(totalDays)} days
+        </div>
+      </div>
+      <div class="flex-ac">
+        <button class="btn btn-primary btn-sm" onclick="addPhase('${proj.id}')">+ Phase</button>
+        <label style="font-size:11px;color:var(--muted);margin-left:6px;margin-right:4px;">Start</label>
+        <input type="date" value="${startDateStr}" onchange="setGanttStartDate('${proj.id}',this.value)"
+          style="font-size:12px;background:var(--bg4);border:1px solid var(--border);color:var(--text);
+            border-radius:6px;padding:4px 8px;outline:none;margin-right:6px;">
+        <button class="btn btn-sm" onclick="ganttZoom=Math.min(4,ganttZoom*1.5);renderTimeline()">+</button>
+        <button class="btn btn-sm" onclick="ganttZoom=Math.max(0.1,ganttZoom/1.5);renderTimeline()">−</button>
+        <button class="btn btn-sm" onclick="ganttZoom=1;renderTimeline()">⊙</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:flex-start;">
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;border:1px solid var(--border);border-radius:10px 10px 0 0;overflow:hidden;background:var(--bg2);">
+          <div style="width:${LABEL_W}px;flex-shrink:0;border-right:1px solid var(--border2);background:var(--bg2);">
+            <div style="height:${HEADER_H}px;display:flex;align-items:flex-end;padding:0 8px 7px;
+              border-bottom:1px solid var(--border2);background:var(--bg3);">
+              <span style="font-size:10px;font-weight:600;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;">Phase / Task</span>
+            </div>
+            <div data-gantt-labels style="height:${ganttHeight}px;overflow:hidden;">${labelRows}</div>
+          </div>
+          <div style="flex:1;overflow-x:auto;overflow-y:hidden;height:${ganttHeight+HEADER_H}px;" id="ganttScroll">
+            <svg width="${svgW}" height="${svgH+HEADER_H}" style="display:block;">
+              <g>
+                <rect width="${svgW}" height="${HEADER_H}" fill="var(--bg3)"/>
+                <line x1="0" y1="${HEADER_H-1}" x2="${svgW}" y2="${HEADER_H-1}" stroke="var(--border2)" stroke-width="1"/>
+                ${headerSvg}
+              </g>
+              <g transform="translate(0,${HEADER_H})">
+                ${gridLines}${rowsSvg}${todayMarker}
+              </g>
+            </svg>
+          </div>
+        </div>
+        <div onmousedown="startGanttResize(event)"
+          style="height:6px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;
+            background:var(--bg3);cursor:ns-resize;display:flex;align-items:center;justify-content:center;
+            transition:background .12s;margin-bottom:10px;"
+          onmouseenter="this.style.background='var(--bg4)'" onmouseleave="this.style.background='var(--bg3)'">
+          <div style="width:40px;height:2px;border-radius:1px;background:var(--border2);pointer-events:none;"></div>
+        </div>
+      </div>
+      ${sideHtml}
+    </div>
+
+    <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
+      <span style="font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Legend</span>
+      ${legendHtml}
+      <div style="display:flex;align-items:center;gap:5px;">
+        <div style="width:18px;height:2px;background:#e05050;opacity:0.75;"></div>
+        <span style="font-size:11px;color:var(--muted);">Today</span>
+      </div>
+      <span style="font-size:11px;color:var(--faint);margin-left:auto;">
+        Dbl-click to edit · Hover row for ⊕📦✕ · Drag bar edge to resize
+      </span>
+    </div>`;
+
+  initGanttResizeEvents();
+  initGanttBarResizeEvents();
+}
+
+// ── Phase split-pane drag ─────────────────────────────────────────────────────
+function startPhaseSplit(e){
+  e.preventDefault();
+  const wrap=document.querySelector('[data-phase-pane="left"]')?.parentElement;
+  if(!wrap)return;
+  const rect=wrap.getBoundingClientRect();
+  window.__phaseSplitDrag={startX:e.clientX,startSplit:phaseSplit,containerW:rect.width};
+}
+function initPhaseSplitEvents(){
+  if(phaseSplitSetup)return;
+  phaseSplitSetup=true;
+  window.addEventListener('mousemove',e=>{
+    if(!window.__phaseSplitDrag)return;
+    const{startX,startSplit,containerW}=window.__phaseSplitDrag;
+    phaseSplit=Math.max(0.15,Math.min(0.85,startSplit+(e.clientX-startX)/containerW));
+    const lp=document.querySelector('[data-phase-pane="left"]');
+    const rp=document.querySelector('[data-phase-pane="right"]');
+    if(lp)lp.style.flex=`${phaseSplit} 1 0`;
+    if(rp)rp.style.flex=`${1-phaseSplit} 1 0`;
+  });
+  window.addEventListener('mouseup',()=>{window.__phaseSplitDrag=null;});
+}
+
+// ── Gantt height drag ─────────────────────────────────────────────────────────
+function startGanttResize(e){
+  e.preventDefault();
+  window.__ganttResizeDrag={startY:e.clientY,startH:ganttHeight};
+}
+function initGanttResizeEvents(){
+  if(ganttResizeSetup)return;
+  ganttResizeSetup=true;
+  window.addEventListener('mousemove',e=>{
+    if(!window.__ganttResizeDrag)return;
+    const{startY,startH}=window.__ganttResizeDrag;
+    ganttHeight=Math.max(180,Math.min(window.innerHeight-200,startH+(e.clientY-startY)));
+    const gs=document.getElementById('ganttScroll');
+    const ll=document.querySelector('#panelTimeline [data-gantt-labels]');
+    if(gs)gs.style.height=ganttHeight+'px';
+    if(ll)ll.style.height=ganttHeight+'px';
+  });
+  window.addEventListener('mouseup',()=>{window.__ganttResizeDrag=null;});
+}
+
+// ── Window resize → re-render active panel ────────────────────────────────────
+window.addEventListener('resize',()=>{
+  if(activeTab==='phases')renderPhases();
+  else if(activeTab==='timeline')renderTimeline();
+});
+
+function toggleGanttRow(phid){
+  if(ganttCollapsed.has(phid))ganttCollapsed.delete(phid);else ganttCollapsed.add(phid);
+  renderTimeline();
+}
+
+async function setGanttStartDate(pid,date){
+  await PATCH(`/api/projects/${pid}`,{startDate:date});
+  await loadState();
+  renderTimeline();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // ORG CHART (per-project connections) — improved
 // ════════════════════════════════════════════════════════════════════════════
 function renderOrgChart(){
@@ -1191,11 +1736,16 @@ function renderOrgChart(){
       <div class="flex-ac">
         <button class="btn ${orgMode==='connecting'?'btn-active':''}" onclick="toggleProjConnMode('${proj.id}')">${orgMode==='connecting'?'● Stop Connecting':'⊕ Connect Teams'}</button>
         <button class="btn" onclick="autoLayoutTeams('${proj.id}')">↺ Auto Layout</button>
+        <button class="btn btn-sm" onclick="orgZoom=Math.min(2.5,orgZoom+.15);orgUpdateTransform()" title="Zoom in">+</button>
+        <button class="btn btn-sm" onclick="orgZoom=Math.max(.2,orgZoom-.15);orgUpdateTransform()" title="Zoom out">−</button>
+        <button class="btn btn-sm" onclick="orgPan={x:20,y:20};orgZoom=1;orgUpdateTransform()" title="Reset view">⊙</button>
       </div>
     </div>
     <svg id="orgSvg" width="100%" height="480" style="background:var(--bg3);border-radius:10px;border:1px solid var(--border);display:block;cursor:${orgMode==='connecting'?'crosshair':'grab'};margin-bottom:14px;">
       <defs>${['integration:#4a9eff','dependency:#f0a030','handoff:#1fb885','reporting:#9b7ee8'].map(s=>{const[v,c]=s.split(':');return`<marker id="arr-${v}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${c}"/></marker>`;}).join('')}</defs>
-      <g>${edges}</g><g>${nodes}</g>
+      <g id="orgViewport" transform="translate(${orgPan.x},${orgPan.y}) scale(${orgZoom})">
+        <g>${edges}</g><g>${nodes}</g>
+      </g>
     </svg>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
       <div class="card">
@@ -1227,32 +1777,101 @@ function editConnLabel(pid,cid){
 
 const patchConnection=(pid,cid,d)=>act(()=>PATCH(`/api/projects/${pid}/connections/${cid}`,d));
 
+function orgUpdateTransform(){
+  const g=document.getElementById('orgViewport');
+  if(g) g.setAttribute('transform',`translate(${orgPan.x},${orgPan.y}) scale(${orgZoom})`);
+}
+
+// Window-level move/up for org chart — registered once so pan/drag survive leaving the SVG
+function initOrgWindowEvents(){
+  if(orgEventsSetup)return;
+  orgEventsSetup=true;
+  window.addEventListener('mousemove',e=>{
+    const svg=document.getElementById('orgSvg');if(!svg)return;
+    if(orgNodeDrag){
+      const proj=S.projects?.find(p=>p.id===orgNodeDrag.pid);
+      const t=proj?.teams.find(t=>t.id===orgNodeDrag.id);if(!t)return;
+      const rect=svg.getBoundingClientRect();
+      const vx=(e.clientX-rect.left-orgPan.x)/orgZoom;
+      const vy=(e.clientY-rect.top-orgPan.y)/orgZoom;
+      t.x=vx-orgNodeDrag.sx;
+      t.y=vy-orgNodeDrag.sy;
+      _redrawOrgChart(proj);
+      clearTimeout(orgNodeDrag._t);
+      const{pid:_pid,id:_id}=orgNodeDrag;const _x=t.x,_y=t.y;
+      orgNodeDrag._t=setTimeout(()=>PATCH(`/api/projects/${_pid}/teams/${_id}`,{x:_x,y:_y}),400);
+      return;
+    }
+    if(orgPanning){
+      orgPan.x=e.clientX-orgPanning.sx;
+      orgPan.y=e.clientY-orgPanning.sy;
+      orgUpdateTransform();
+    }
+  });
+  window.addEventListener('mouseup',()=>{
+    if(!orgNodeDrag&&!orgPanning)return;
+    orgNodeDrag=null;orgPanning=null;
+    const svg=document.getElementById('orgSvg');
+    if(svg)svg.style.cursor=ap()?.orgMode==='connecting'?'crosshair':'grab';
+  });
+}
+
 function initProjOrgEvents(pid){
   const svg=document.getElementById('orgSvg');if(!svg)return;
+
+  // Node drag — account for zoom/pan
   svg.querySelectorAll('.proj-node').forEach(el=>{
     el.addEventListener('mousedown',e=>{
       const proj=ap();if(proj?.orgMode==='connecting')return;
       const id=el.dataset.id,t=proj?.teams.find(t=>t.id===id);if(!t)return;
       const rect=svg.getBoundingClientRect();
-      orgNodeDrag={pid,id,sx:e.clientX-rect.left-(t.x??30),sy:e.clientY-rect.top-(t.y??40)};
-      e.preventDefault();
+      const vx=(e.clientX-rect.left-orgPan.x)/orgZoom;
+      const vy=(e.clientY-rect.top-orgPan.y)/orgZoom;
+      orgNodeDrag={pid,id,sx:vx-(t.x??30),sy:vy-(t.y??40)};
+      e.preventDefault();e.stopPropagation();
     });
   });
-  svg.onmousemove=e=>{
-    if(!orgNodeDrag)return;
-    const proj=S.projects?.find(p=>p.id===orgNodeDrag.pid);
-    const t=proj?.teams.find(t=>t.id===orgNodeDrag.id);if(!t)return;
-    const rect=svg.getBoundingClientRect();
-    t.x=e.clientX-rect.left-orgNodeDrag.sx;
-    t.y=e.clientY-rect.top-orgNodeDrag.sy;
-    renderOrgChart();
-    // Debounce persist
-    clearTimeout(orgNodeDrag._t);
-    const {pid:_pid,id:_id}=orgNodeDrag;const _x=t.x,_y=t.y;
-    orgNodeDrag._t=setTimeout(()=>PATCH(`/api/projects/${_pid}/teams/${_id}`,{x:_x,y:_y}),400);
-  };
-  svg.onmouseup=()=>{orgNodeDrag=null;};
-  svg.onmouseleave=()=>{orgNodeDrag=null;};
+
+  // Background mousedown → pan
+  svg.addEventListener('mousedown',e=>{
+    if(e.target.closest('.proj-node')) return;
+    orgPanning={sx:e.clientX-orgPan.x,sy:e.clientY-orgPan.y};
+    svg.style.cursor='grabbing';
+  });
+
+  // Scroll to zoom
+  svg.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const delta=e.deltaY>0?-0.1:0.1;
+    orgZoom=Math.max(.2,Math.min(2.5,orgZoom+delta));
+    orgUpdateTransform();
+  },{passive:false});
+
+  initOrgWindowEvents();
+}
+
+// Lightweight redraw during node drag — no full DOM rebuild
+function _redrawOrgChart(proj){
+  const{teams,connections}=proj;
+  // Reposition nodes
+  document.querySelectorAll('.proj-node').forEach(el=>{
+    const t=teams.find(t=>t.id===el.dataset.id);if(!t)return;
+    el.setAttribute('transform',`translate(${t.x??30},${t.y??40})`);
+  });
+  // Redraw edges
+  const edgesG=document.querySelector('#orgViewport g');if(!edgesG)return;
+  const tCol2=t=>({integration:'#4a9eff',dependency:'#f0a030',handoff:'#1fb885',reporting:'#9b7ee8'})[t]||'#4a9eff';
+  edgesG.innerHTML=connections.map(c=>{
+    const ft=teams.find(t=>t.id===c.from),tt=teams.find(t=>t.id===c.to);if(!ft||!tt)return'';
+    const col=tCol2(c.type);
+    const x1=(ft.x??30)+NODE_W/2,y1=(ft.y??40)+NODE_H/2;
+    const x2=(tt.x??30)+NODE_W/2,y2=(tt.y??40)+NODE_H/2;
+    const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
+    const nx=-dy/len*20,ny=dx/len*20;
+    return`<path d="M${x1},${y1} Q${mx+nx},${my+ny} ${x2},${y2}" stroke="${col}" stroke-width="2" fill="none" marker-end="url(#arr-${c.type})" stroke-dasharray="${c.type==='dependency'?'6,3':'none'}"/>
+      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="#161b27" stroke="${col}" stroke-width="1" opacity=".92"/>
+      <text x="${mx+nx}" y="${my+ny+4}" text-anchor="middle" fill="${col}" font-size="10" font-family="Segoe UI,system-ui" font-weight="600">${c.label||c.type}</text>`;
+  }).join('');
 }
 
 // ════════════════════════════════════════════════════════════════════════════

@@ -147,7 +147,7 @@ def api_update_project(pid):
     state = load_state()
     proj  = get_project(state["projects"], pid)
     data  = request.get_json() or {}
-    for f in ("name", "color", "selTeamId", "selMemberId", "orgMode", "businessCase"):
+    for f in ("name", "color", "selTeamId", "selMemberId", "orgMode", "businessCase", "startDate"):
         if f in data: proj[f] = data[f]
     save_projects(state["projects"])
     return ok({"project": proj})

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp /Users/dhurianvitoldas/Documents/Development/teamiq/models.py /Users/dhurianvitoldas/Downloads/teamiq/models.py)",
+      "Bash(cp /Users/dhurianvitoldas/Documents/Development/teamiq/app.py /Users/dhurianvitoldas/Downloads/teamiq/app.py)"
+    ]
+  }
+}

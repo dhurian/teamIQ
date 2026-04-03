@@ -95,13 +95,8 @@ def all_phases_flat(phases: list) -> list:
 
 def remove_phase_edges(proj: dict, phid: str):
     """Remove all edges touching phid (and recursively its children)."""
-    ids = {ph["id"] for ph in all_phases_flat([next(
-        (p for p in proj["phases"] if p["id"] == phid), {"children": []}
-    )])}
-    # Also collect via find
     ph, _ = find_phase(proj["phases"], phid)
-    if ph:
-        ids = {p["id"] for p in all_phases_flat([ph])}
+    ids = {p["id"] for p in all_phases_flat([ph])} if ph else {phid}
     proj["phaseEdges"] = [e for e in proj.get("phaseEdges", [])
                           if e["from"] not in ids and e["to"] not in ids]
 

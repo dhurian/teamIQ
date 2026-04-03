@@ -51,13 +51,6 @@ def get_project(projects, pid):
     return p
 
 
-def get_team(project, tid):
-    t = next((t for t in project["teams"] if t["id"] == tid), None)
-    if not t:
-        abort(404)
-    return t
-
-
 # ── Response factories ────────────────────────────────────────────────────────
 
 def ok(data=None):

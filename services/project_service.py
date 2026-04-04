@@ -4,6 +4,7 @@ services/project_service.py
 Business logic for project-level CRUD and import/export.
 No Flask imports — all functions take/return plain dicts.
 """
+import copy
 import datetime
 from models import uid, new_phase, all_phases_flat, seed_projects, seed_org
 
@@ -91,6 +92,45 @@ def delete_project(projects: list, pid: str, active_id: str) -> tuple[list, str]
     new_list = [p for p in projects if p["id"] != pid]
     new_active = active_id if active_id != pid else new_list[0]["id"]
     return new_list, new_active
+
+
+# ── Clone ─────────────────────────────────────────────────────────────────────
+
+def clone_project(proj: dict) -> dict:
+    """
+    Deep-copy *proj* and reassign ALL IDs (project, phases, WPs, teams, members).
+    Cross-references (phaseEdges from/to, assignedMembers, etc.) are remapped too
+    via a JSON-level string substitution so nothing is missed.
+    """
+    import json
+
+    cloned = copy.deepcopy(proj)
+
+    # 1. Collect every id value in the tree → build old→new map
+    id_map: dict[str, str] = {}
+
+    def _collect(obj):
+        if isinstance(obj, list):
+            for item in obj:
+                _collect(item)
+        elif isinstance(obj, dict):
+            if "id" in obj and isinstance(obj["id"], str):
+                old = obj["id"]
+                prefix = old.split("_")[0] + "_"
+                id_map[old] = prefix + uid()
+            for v in obj.values():
+                _collect(v)
+
+    _collect(cloned)
+
+    # 2. Serialise → substitute → deserialise (handles all cross-references)
+    raw = json.dumps(cloned)
+    for old_id, new_id in id_map.items():
+        raw = raw.replace(f'"{old_id}"', f'"{new_id}"')
+    result = json.loads(raw)
+
+    result["name"] = proj["name"] + " (Copy)"
+    return result
 
 
 # ── Import / Export ───────────────────────────────────────────────────────────

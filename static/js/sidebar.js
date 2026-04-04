@@ -14,7 +14,10 @@ function renderSidebar(){
           <div class="proj-name">${p.name}</div>
           <div class="proj-meta">${p.teams.length} teams · ${p.phases.length} phases</div>
         </div>
-        ${projects.length>1?`<button class="proj-del" onclick="event.stopPropagation();delProject('${p.id}')">✕</button>`:''}
+        <div style="display:flex;gap:2px;">
+          <button class="proj-del" title="Clone project" onclick="event.stopPropagation();cloneProject('${p.id}')">⎘</button>
+          ${projects.length>1?`<button class="proj-del" onclick="event.stopPropagation();delProject('${p.id}')">✕</button>`:''}
+        </div>
       </div>`).join('')}`;
   const proj = ap();
   const lbl  = document.getElementById('projTabsLabel');

@@ -142,6 +142,7 @@ def run_monte_carlo(members: list, phases: list, org_nodes: dict, n: int = 2000)
 
     # Phase probs — only top-level (each is the AND of itself + children)
     phase_prob = []
+    _phase_ok_arrays = []
     all_ok = np.ones(n, dtype=bool)
     for ph in phases:
         ph_flat = all_phases_flat([ph])
@@ -151,10 +152,18 @@ def run_monte_carlo(members: list, phases: list, org_nodes: dict, n: int = 2000)
                 if sk in ALL_SKILLS:
                     ph_ok &= eff[:, ALL_SKILLS.index(sk)] >= req
         phase_prob.append(float(ph_ok.mean()))
+        _phase_ok_arrays.append(ph_ok)
         all_ok &= ph_ok
 
+    def _ci95(arr):
+        p = float(arr.mean())
+        h = 1.96 * float(np.sqrt(max(p * (1 - p), 0) / len(arr)))
+        return [round(max(0.0, p - h), 4), round(min(1.0, p + h), 4)]
+
     return {"overall_prob": float(all_ok.mean()),
+            "overall_ci95": _ci95(all_ok),
             "phase_prob":   phase_prob,
+            "phase_ci95":   [_ci95(arr) for arr in _phase_ok_arrays],
             "team_exp":     team_exp}
 
 

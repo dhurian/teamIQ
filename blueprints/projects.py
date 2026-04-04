@@ -67,6 +67,19 @@ def api_set_active():
     return ok()
 
 
+# ── Clone ────────────────────────────────────────────────────────────────────
+
+@bp.route("/api/projects/<pid>/clone", methods=["POST"])
+def api_clone_project(pid):
+    state  = load_state()
+    proj   = get_project(state["projects"], pid)
+    cloned = project_service.clone_project(proj)
+    state["projects"].append(cloned)
+    save_projects(state["projects"])
+    save_active(cloned["id"])
+    return ok({"project": cloned})
+
+
 # ── Export / Import ───────────────────────────────────────────────────────────
 
 @bp.route("/api/export")

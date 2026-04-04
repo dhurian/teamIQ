@@ -31,7 +31,8 @@
       "Bash(ps -p 24348 -o pid,command)",
       "Bash(kill 24348)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git merge:*)"
     ]
   }
 }

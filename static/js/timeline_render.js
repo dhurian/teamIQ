@@ -1,34 +1,155 @@
 // ════════════════════════════════════════════════════════════════════════════
-// TIMELINE – bar resize, gantt resize, helper actions, main render
+// TIMELINE – bar drag (right-edge / left-edge / whole-bar), gantt resize, render
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Bar resize drag ───────────────────────────────────────────────────────────
+// ── Bar drag events (right-edge · left-edge · whole-bar) ──────────────────
 function initGanttBarResizeEvents(){
   if(ganttBarResizeSetup) return;
   ganttBarResizeSetup = true;
-  document.addEventListener('mousedown',e=>{
-    const h=e.target.closest?.('.g-resize'); if(!h) return;
-    e.preventDefault(); e.stopPropagation();
-    const DAY_W=Math.max(3,Math.round(14*ganttZoom));
-    ganttBarResizeDrag={id:h.dataset.id,type:h.dataset.type,pid:h.dataset.pid,startDays:parseFloat(h.dataset.days),startX:e.clientX,DAY_W,currentDays:parseFloat(h.dataset.days)};
+
+  // ── mousedown: decide which drag mode ──────────────────────────────────
+  document.addEventListener('mousedown', e=>{
+    const DAY_W = Math.max(3, Math.round(14*ganttZoom));
+
+    // Right-edge resize (existing) ─────────────────────────────────────────
+    const rh = e.target.closest?.('.g-resize');
+    if(rh && !rh.classList.contains('g-resize-left')){
+      e.preventDefault(); e.stopPropagation();
+      ganttBarResizeDrag = {
+        id:rh.dataset.id, type:rh.dataset.type, pid:rh.dataset.pid,
+        startDays:parseFloat(rh.dataset.days), startX:e.clientX, DAY_W,
+        currentDays:parseFloat(rh.dataset.days)
+      };
+      return;
+    }
+
+    // Left-edge resize → moves start date, keeps end fixed ────────────────
+    const lh = e.target.closest?.('.g-resize-left');
+    if(lh){
+      e.preventDefault(); e.stopPropagation();
+      const g = lh.closest('[data-gbar]');
+      const bar = g?.querySelector('rect.g-main');
+      ganttBarStartDrag = {
+        id:lh.dataset.id, type:lh.dataset.type, pid:lh.dataset.pid,
+        origStart:parseFloat(lh.dataset.start), origEnd:parseFloat(lh.dataset.end),
+        startX:e.clientX, DAY_W,
+        origX1: bar ? parseFloat(bar.getAttribute('x')) : 0,
+        origW:  bar ? parseFloat(bar.getAttribute('width')) : 0,
+        currentStart:parseFloat(lh.dataset.start)
+      };
+      return;
+    }
+
+    // Whole-bar move → shifts start date, preserves duration ──────────────
+    const mb = e.target.closest?.('.g-move');
+    if(mb){
+      e.preventDefault(); e.stopPropagation();
+      const bar = mb.closest('[data-gbar]')?.querySelector('rect.g-main') || mb;
+      ganttBarMoveDrag = {
+        id:mb.dataset.id, type:mb.dataset.type, pid:mb.dataset.pid,
+        origStart:parseFloat(mb.dataset.start), origEnd:parseFloat(mb.dataset.end),
+        startX:e.clientX, DAY_W,
+        origX1: parseFloat(bar.getAttribute('x')),
+        origW:  parseFloat(bar.getAttribute('width')),
+        currentStart:parseFloat(mb.dataset.start),
+        moved:false
+      };
+    }
   });
-  window.addEventListener('mousemove',e=>{
-    if(!ganttBarResizeDrag) return;
-    const {startX,startDays,DAY_W} = ganttBarResizeDrag;
-    ganttBarResizeDrag.currentDays = Math.max(1, startDays + (e.clientX-startX)/DAY_W);
-    const g=document.querySelector(`[data-gbar="${ganttBarResizeDrag.id}"]`); if(!g) return;
-    const bar=g.querySelector('rect.g-main'); if(!bar) return;
-    const newW=Math.max(4,Math.round(ganttBarResizeDrag.currentDays*DAY_W));
-    bar.setAttribute('width',newW);
-    const handle=g.querySelector('.g-resize'); if(handle) handle.setAttribute('x',parseFloat(bar.getAttribute('x')) + Math.max(0,newW-7));
+
+  // ── mousemove: live visual feedback ────────────────────────────────────
+  window.addEventListener('mousemove', e=>{
+
+    // Right-edge ────────────────────────────────────────────────────────────
+    if(ganttBarResizeDrag){
+      const {startX,startDays,DAY_W} = ganttBarResizeDrag;
+      ganttBarResizeDrag.currentDays = Math.max(1, startDays + (e.clientX-startX)/DAY_W);
+      const g = document.querySelector(`[data-gbar="${ganttBarResizeDrag.id}"]`); if(!g) return;
+      const bar = g.querySelector('rect.g-main'); if(!bar) return;
+      const newW = Math.max(4, Math.round(ganttBarResizeDrag.currentDays*DAY_W));
+      bar.setAttribute('width', newW);
+      const rh = g.querySelector('.g-resize');
+      if(rh) rh.setAttribute('x', parseFloat(bar.getAttribute('x')) + Math.max(0, newW-8));
+      return;
+    }
+
+    // Left-edge ─────────────────────────────────────────────────────────────
+    if(ganttBarStartDrag){
+      const {startX,origX1,origW,origStart,origEnd,DAY_W} = ganttBarStartDrag;
+      const pxDelta = e.clientX - startX;
+      // clamp: start can't pass end − 1 day
+      const maxPxDelta = (origEnd - origStart - 1) * DAY_W;
+      const clampedDelta = Math.min(pxDelta, maxPxDelta);
+      const newX1 = origX1 + clampedDelta;
+      const newW  = Math.max(4, origW - clampedDelta);
+      ganttBarStartDrag.currentStart = origStart + clampedDelta / DAY_W;
+
+      const g = document.querySelector(`[data-gbar="${ganttBarStartDrag.id}"]`); if(!g) return;
+      const bar = g.querySelector('rect.g-main'); if(!bar) return;
+      bar.setAttribute('x', newX1);
+      bar.setAttribute('width', newW);
+      const lh = g.querySelector('.g-resize-left');
+      if(lh) lh.setAttribute('x', newX1);
+      const txt = g.querySelector('text');
+      if(txt) txt.setAttribute('x', newX1 + 6);
+      return;
+    }
+
+    // Whole-bar move ────────────────────────────────────────────────────────
+    if(ganttBarMoveDrag){
+      const {startX,origX1,origW,origStart,DAY_W} = ganttBarMoveDrag;
+      const pxDelta = e.clientX - startX;
+      if(Math.abs(pxDelta) > 3) ganttBarMoveDrag.moved = true;
+      const newX1 = origX1 + pxDelta;
+      ganttBarMoveDrag.currentStart = origStart + pxDelta / DAY_W;
+
+      const g = document.querySelector(`[data-gbar="${ganttBarMoveDrag.id}"]`); if(!g) return;
+      const bar = g.querySelector('rect.g-main'); if(!bar) return;
+      bar.setAttribute('x', newX1);
+      const lh = g.querySelector('.g-resize-left');
+      const rh = g.querySelector('.g-resize');
+      if(lh) lh.setAttribute('x', newX1);
+      if(rh) rh.setAttribute('x', newX1 + Math.max(0, origW - 8));
+      const txt = g.querySelector('text');
+      if(txt) txt.setAttribute('x', newX1 + 6);
+    }
   });
-  window.addEventListener('mouseup',async()=>{
-    if(!ganttBarResizeDrag) return;
-    const {id,type,pid,currentDays}=ganttBarResizeDrag; ganttBarResizeDrag=null;
-    const {value,unit}=daysToValueUnit(currentDays);
-    if(type==='wp') await PATCH(`/api/projects/${pid}/work-packages/${id}`,{value,unit});
-    else await PATCH(`/api/projects/${pid}/phases/${id}`,{value,unit});
-    await loadState(); renderTimeline();
+
+  // ── mouseup: commit to API ──────────────────────────────────────────────
+  window.addEventListener('mouseup', async ()=>{
+
+    // Right-edge ────────────────────────────────────────────────────────────
+    if(ganttBarResizeDrag){
+      const {id,type,pid,currentDays} = ganttBarResizeDrag; ganttBarResizeDrag=null;
+      const {value,unit} = daysToValueUnit(currentDays);
+      if(type==='wp') await PATCH(`/api/projects/${pid}/work-packages/${id}`,{value,unit});
+      else            await PATCH(`/api/projects/${pid}/phases/${id}`,{value,unit});
+      await loadState(); renderTimeline();
+      return;
+    }
+
+    // Left-edge ─────────────────────────────────────────────────────────────
+    if(ganttBarStartDrag){
+      const {id,type,pid,origEnd,currentStart} = ganttBarStartDrag; ganttBarStartDrag=null;
+      const newDate = dateInputFromProjectDay(ganttStartMs, Math.round(currentStart));
+      const newDuration = Math.max(1, origEnd - currentStart);
+      const {value,unit} = daysToValueUnit(newDuration);
+      const patch = {startDateOverride:newDate, value, unit};
+      if(type==='wp') await PATCH(`/api/projects/${pid}/work-packages/${id}`, patch);
+      else            await PATCH(`/api/projects/${pid}/phases/${id}`, patch);
+      await loadState(); renderTimeline();
+      return;
+    }
+
+    // Whole-bar move ────────────────────────────────────────────────────────
+    if(ganttBarMoveDrag){
+      const {id,type,pid,currentStart,moved} = ganttBarMoveDrag; ganttBarMoveDrag=null;
+      if(!moved) return;   // treat micro-drag as a click — don't save
+      const newDate = dateInputFromProjectDay(ganttStartMs, Math.round(currentStart));
+      if(type==='wp') await PATCH(`/api/projects/${pid}/work-packages/${id}`,{startDateOverride:newDate});
+      else            await PATCH(`/api/projects/${pid}/phases/${id}`,{startDateOverride:newDate});
+      await loadState(); renderTimeline();
+    }
   });
 }
 
@@ -52,7 +173,6 @@ function initGanttResizeEvents(){
     if(!ganttSelId) return;
     const scroll=document.getElementById('ganttScroll');
     if(!scroll) return;
-    // Deselect if click was inside ganttScroll but not on a labelled bar
     if(scroll.contains(e.target) && !e.target.closest('[data-gbar]')){
       ganttSelId=null; renderTimeline();
     }
@@ -80,6 +200,8 @@ function renderTimeline(){
   const proj=ap(); if(!proj) return;
   proj.taskEdges = proj.taskEdges || [];
   const {rows,totalDays,startMs} = buildGanttRows(proj);
+  ganttStartMs = startMs;   // share with drag handlers
+
   const ROW_H=38, LABEL_W=290, DAY_W=Math.max(3,Math.round(14*ganttZoom));
   const HEADER_H=56;
   const visibleStart=ganttViewStartDay;
@@ -114,11 +236,39 @@ function renderTimeline(){
     const stripe=i%2===1;
     const mainColor=row.type==='wp' ? (WP_COLS[row.wp.status]||'#4a556a') : row.col;
     const isSel=ganttSelId===row.id;
+
+    // Per-type bar geometry
+    const bY  = row.type==='wp' ? barY+7  : barY;
+    const bH  = row.type==='wp' ? barH-10 : barH;
+    const bRx = row.type==='wp' ? 2 : 4;
+    const fillOpacity = isSel?'50': row.type==='wp'?'38':'28';
+
+    // Show edge handles only when bar is wide enough
+    const showHandles = barW > 16;
+
     if(stripe) rowsSvg += `<rect x="0" y="${y}" width="${svgW}" height="${ROW_H}" fill="rgba(255,255,255,0.018)"/>`;
+
     rowsSvg += `<g transform="translate(0,${y})" data-gbar="${row.id}">
-      <rect class="g-main" x="${x1}" y="${row.type==='wp'?barY+7:barY}" width="${barW}" height="${row.type==='wp'?barH-10:barH}" rx="${row.type==='wp'?2:4}" fill="${mainColor}${isSel?'50':row.type==='wp'?'38':'28'}" stroke="${mainColor}" stroke-width="${isSel?2:1.2}"/>
-      ${barW>52?`<text x="${x1+6}" y="${midY+4}" fill="${mainColor}" font-size="${row.type==='wp'?10:11}" font-weight="600" font-family="var(--font)">${taskLabel(row).length>Math.max(8,Math.floor(barW/7))?taskLabel(row).slice(0,Math.max(8,Math.floor(barW/7))-1)+'…':taskLabel(row)}</text>`:''}
-      <rect class="g-resize" data-id="${row.id}" data-type="${row.type}" data-pid="${proj.id}" data-days="${end-start}" x="${x1+Math.max(0,barW-8)}" y="${row.type==='wp'?barY+7:barY}" width="8" height="${row.type==='wp'?barH-10:barH}" rx="2" fill="${mainColor}66" style="cursor:ew-resize;"/>
+      <!-- main bar – whole-bar drag -->
+      <rect class="g-main g-move"
+        x="${x1}" y="${bY}" width="${barW}" height="${bH}" rx="${bRx}"
+        data-id="${row.id}" data-type="${row.type}" data-pid="${proj.id}"
+        data-start="${start}" data-end="${end}"
+        fill="${mainColor}${fillOpacity}" stroke="${mainColor}" stroke-width="${isSel?2:1.2}"
+        style="cursor:grab;"/>
+      ${barW>52?`<text x="${x1+6}" y="${midY+4}" fill="${mainColor}" font-size="${row.type==='wp'?10:11}" font-weight="600" font-family="var(--font)" style="pointer-events:none;">${taskLabel(row).length>Math.max(8,Math.floor(barW/7))?taskLabel(row).slice(0,Math.max(8,Math.floor(barW/7))-1)+'…':taskLabel(row)}</text>`:''}
+      ${showHandles?`
+      <!-- left-edge handle – moves start date -->
+      <rect class="g-resize-left"
+        data-id="${row.id}" data-type="${row.type}" data-pid="${proj.id}"
+        data-start="${start}" data-end="${end}"
+        x="${x1}" y="${bY}" width="8" height="${bH}" rx="${bRx}"
+        fill="${mainColor}88" style="cursor:w-resize;"/>
+      <!-- right-edge handle – changes duration -->
+      <rect class="g-resize"
+        data-id="${row.id}" data-type="${row.type}" data-pid="${proj.id}" data-days="${end-start}"
+        x="${x1+Math.max(0,barW-8)}" y="${bY}" width="8" height="${bH}" rx="2"
+        fill="${mainColor}88" style="cursor:e-resize;"/>`:''}
     </g>`;
 
     const hasKids=(row.type!=='wp') && (((row.ph.children||[]).length>0) || ((row.ph.workPackages||[]).length>0));
@@ -186,7 +336,7 @@ function renderTimeline(){
       <div style="display:flex;align-items:center;gap:5px;"><div style="width:10px;height:10px;border-radius:2px;background:#4a9eff;"></div><span style="font-size:11px;color:var(--muted);">Phase/Subphase</span></div>
       ${Object.entries(WP_COLS).map(([s,c])=>`<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:${c};"></div><span style="font-size:11px;color:var(--muted);">WP: ${WP_LABELS[s]}</span></div>`).join('')}
       <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:2px;background:#e05050;opacity:0.75;"></div><span style="font-size:11px;color:var(--muted);">Today</span></div>
-      <span style="font-size:11px;color:var(--faint);margin-left:auto;">Click a row to open the inspector. Dependencies apply start-after-finish scheduling.</span>
+      <span style="font-size:11px;color:var(--faint);margin-left:auto;">Drag bar to move · drag edges to resize · click row label to inspect.</span>
     </div>
     ${inspectorHtml}`;
 

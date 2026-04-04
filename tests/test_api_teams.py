@@ -35,9 +35,8 @@ class TestAddTeam:
         r = client.post(f"/api/projects/{proj_id}/teams", json={"name": "T"})
         assert r.get_json()["team"]["id"].startswith("team_")
 
-    def test_add_team_appears_in_state(self, client, proj_id, second_team_id):
-        state = client.get("/api/state").get_json()
-        proj = next(p for p in state["projects"] if p["id"] == proj_id)
+    def test_add_team_appears_in_state(self, project_state, proj_id, second_team_id):
+        proj = project_state(proj_id)
         assert any(t["id"] == second_team_id for t in proj["teams"])
 
     def test_add_team_unknown_project_404(self, client):
@@ -64,11 +63,10 @@ class TestUpdateTeam:
         assert t["x"] == 150
         assert t["y"] == 200
 
-    def test_patch_team_persists(self, client, proj_id, team_id):
+    def test_patch_team_persists(self, client, project_state, proj_id, team_id):
         client.patch(f"/api/projects/{proj_id}/teams/{team_id}",
                      json={"name": "Persisted"})
-        state = client.get("/api/state").get_json()
-        proj = next(p for p in state["projects"] if p["id"] == proj_id)
+        proj = project_state(proj_id)
         team = next(t for t in proj["teams"] if t["id"] == team_id)
         assert team["name"] == "Persisted"
 
@@ -98,10 +96,9 @@ class TestDeleteTeam:
         assert r.status_code == 200
         assert r.get_json()["ok"] is True
 
-    def test_deleted_team_not_in_state(self, client, proj_id, second_team_id):
+    def test_deleted_team_not_in_state(self, client, project_state, proj_id, second_team_id):
         client.delete(f"/api/projects/{proj_id}/teams/{second_team_id}")
-        state = client.get("/api/state").get_json()
-        proj = next(p for p in state["projects"] if p["id"] == proj_id)
+        proj = project_state(proj_id)
         assert not any(t["id"] == second_team_id for t in proj["teams"])
 
     def test_delete_team_removes_connections(self, client, proj_id, team_id, second_team_id):
@@ -177,10 +174,9 @@ class TestDeleteMember:
         assert r.status_code == 200
         assert r.get_json()["ok"] is True
 
-    def test_deleted_member_not_in_team(self, client, proj_id, team_id, member_id):
+    def test_deleted_member_not_in_team(self, client, project_state, proj_id, team_id, member_id):
         client.delete(f"/api/projects/{proj_id}/members/{member_id}")
-        state = client.get("/api/state").get_json()
-        proj = next(p for p in state["projects"] if p["id"] == proj_id)
+        proj = project_state(proj_id)
         team = next(t for t in proj["teams"] if t["id"] == team_id)
         assert not any(m["id"] == member_id for m in team["members"])
 

@@ -1,0 +1,4 @@
+# Low-value / binary assets for assistant context
+static/pwa/icons/*
+static/favicon.ico
+LICENSE

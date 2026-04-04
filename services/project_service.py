@@ -5,7 +5,8 @@ Business logic for project-level CRUD and import/export.
 No Flask imports — all functions take/return plain dicts.
 """
 import datetime
-from models import uid, new_phase, all_phases_flat, seed_projects, seed_org
+from models import uid, new_phase, all_phases_flat
+from seed_data import seed_projects, seed_org
 
 
 # ── Schema normalisation ──────────────────────────────────────────────────────

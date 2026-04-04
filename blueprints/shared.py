@@ -7,7 +7,7 @@ circular imports.
 """
 from flask import jsonify, abort
 from db import db_get, db_set
-from models import seed_projects, seed_org
+from seed_data import seed_projects, seed_org
 
 # Re-export normalize_projects from the service layer for backward compatibility.
 from services.project_service import normalize_projects  # noqa: F401

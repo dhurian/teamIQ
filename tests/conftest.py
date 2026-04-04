@@ -51,7 +51,7 @@ def app():
 def client(app):
     """Flask test client with a clean DB before each test."""
     import db as db_module
-    from models import seed_projects, seed_org
+    from seed_data import seed_projects, seed_org
 
     # Reset to clean seed state before every test
     projects = seed_projects()

@@ -7,6 +7,7 @@ it wires blueprints together, registers error handlers, and starts the server.
 import os
 from flask import Flask, jsonify
 from db import init_db
+from migrations.v1_json_to_tables import run as run_migration
 
 from blueprints.frontend      import bp as frontend_bp
 from blueprints.projects      import bp as projects_bp
@@ -45,6 +46,7 @@ def create_app() -> Flask:
 
 # Module-level app instance (used by gunicorn: `gunicorn app:app`)
 init_db()
+run_migration()
 app = create_app()
 
 

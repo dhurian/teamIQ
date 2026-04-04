@@ -27,7 +27,11 @@
       "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -c \":*)",
       "Bash(/Users/dhurianvitoldas/Downloads/teamiq/.venv/bin/python -m pytest --tb=short -q)",
       "Bash(ls -lh /Users/dhurianvitoldas/Documents/Development/teamiq/tests/*.py)",
-      "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/**/*.py)"
+      "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/**/*.py)",
+      "Bash(ps -p 24348 -o pid,command)",
+      "Bash(kill 24348)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

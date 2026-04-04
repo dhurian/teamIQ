@@ -22,14 +22,128 @@ def _connect() -> sqlite3.Connection:
 
 
 def init_db():
-    """Create the store table if it doesn't exist."""
+    """Create all tables (legacy store + normalized schema)."""
     with _connect() as conn:
+        # ── Legacy key-value store (kept for migration reads) ──────────────────
         conn.execute("""
             CREATE TABLE IF NOT EXISTS store (
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )
         """)
+
+        # ── Normalized project tables ──────────────────────────────────────────
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id                TEXT PRIMARY KEY,
+                name              TEXT NOT NULL DEFAULT '',
+                color             TEXT NOT NULL DEFAULT '#4a9eff',
+                sel_team_id       TEXT,
+                sel_member_id     TEXT,
+                org_mode          TEXT NOT NULL DEFAULT 'none',
+                start_date        TEXT,
+                business_case_json TEXT NOT NULL DEFAULT '{}',
+                task_edges_json   TEXT NOT NULL DEFAULT '[]'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS teams (
+                id         TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                name       TEXT NOT NULL DEFAULT '',
+                color      TEXT NOT NULL DEFAULT '#4a9eff',
+                x          REAL NOT NULL DEFAULT 30,
+                y          REAL NOT NULL DEFAULT 40,
+                sort_order INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS members (
+                id         TEXT PRIMARY KEY,
+                team_id    TEXT NOT NULL,
+                org_id     TEXT,
+                name       TEXT,
+                role       TEXT,
+                skills_json TEXT,
+                sort_order INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS connections (
+                id         TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                from_id    TEXT NOT NULL,
+                to_id      TEXT NOT NULL,
+                label      TEXT NOT NULL DEFAULT '',
+                type       TEXT NOT NULL DEFAULT 'integration'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS requirements (
+                id             TEXT PRIMARY KEY,
+                project_id     TEXT NOT NULL,
+                text           TEXT NOT NULL DEFAULT '',
+                linked_wps_json TEXT NOT NULL DEFAULT '[]',
+                sort_order     INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        # ── Timeline tables (Phase 0 deliverable) ──────────────────────────────
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS timeline_items (
+                id                    TEXT PRIMARY KEY,
+                project_id            TEXT NOT NULL,
+                parent_id             TEXT,
+                item_type             TEXT NOT NULL,
+                name                  TEXT NOT NULL DEFAULT '',
+                value                 REAL NOT NULL DEFAULT 1,
+                unit                  TEXT NOT NULL DEFAULT 'weeks',
+                x                     REAL DEFAULT 60,
+                y                     REAL DEFAULT 60,
+                expanded              INTEGER NOT NULL DEFAULT 1,
+                required_json         TEXT NOT NULL DEFAULT '{}',
+                start_date_override   TEXT,
+                end_date_override     TEXT,
+                sort_order            INTEGER NOT NULL DEFAULT 0,
+                description           TEXT DEFAULT '',
+                deliverables_json     TEXT DEFAULT '[]',
+                assigned_members_json TEXT DEFAULT '[]',
+                status                TEXT DEFAULT 'not_started'
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS timeline_dependencies (
+                id         TEXT PRIMARY KEY,
+                project_id TEXT NOT NULL,
+                from_id    TEXT NOT NULL,
+                to_id      TEXT NOT NULL,
+                dep_type   TEXT NOT NULL DEFAULT 'phase'
+            )
+        """)
+
+        # ── Organisation hierarchy ─────────────────────────────────────────────
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS org_nodes (
+                id          TEXT PRIMARY KEY,
+                parent_id   TEXT,
+                type        TEXT NOT NULL,
+                name        TEXT NOT NULL DEFAULT '',
+                role        TEXT,
+                color       TEXT,
+                expanded    INTEGER NOT NULL DEFAULT 1,
+                skills_json TEXT,
+                sort_order  INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
+        # ── Active project singleton ───────────────────────────────────────────
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS active_project (
+                singleton_key INTEGER PRIMARY KEY DEFAULT 1,
+                project_id    TEXT
+            )
+        """)
+
         conn.commit()
 
 

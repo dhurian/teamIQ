@@ -4,42 +4,51 @@ blueprints/shared.py
 Shared state helpers, response factories, and guard functions used by every
 blueprint. Importing from one place keeps each blueprint file short and avoids
 circular imports.
+
+State is now persisted through the repository layer (repositories/) which
+reads and writes normalized SQLite tables instead of JSON blobs.
 """
 from flask import jsonify, abort
-from db import db_get, db_set
 from models import seed_projects, seed_org
+from repositories import project_repo, org_repo
 
 # Re-export normalize_projects from the service layer for backward compatibility.
 from services.project_service import normalize_projects  # noqa: F401
 
 
-def load_state():
-    projects = db_get("projects")
-    org      = db_get("globalOrg")
-    active   = db_get("activeProjectId")
+# ── State persistence ─────────────────────────────────────────────────────────
 
-    if projects is None:
+def load_state() -> dict:
+    projects = project_repo.load_all()
+    org      = org_repo.load()
+
+    if not projects:
         projects = seed_projects()
-    else:
-        projects = normalize_projects(projects)
-    db_set("projects", projects)
+        project_repo.save_all(projects)
 
     if org is None:
         org = seed_org()
-        db_set("globalOrg", org)
+        org_repo.save(org)
 
-    project_ids = {p.get("id") for p in projects}
-    if active is None or active not in project_ids:
-        active = projects[0]["id"] if projects else None
-        if active is not None:
-            db_set("activeProjectId", active)
+    active = project_repo.get_active()
+    ids    = {p["id"] for p in projects}
+    if active not in ids:
+        active = projects[0]["id"]
+        project_repo.set_active(active)
 
     return {"activeProjectId": active, "globalOrg": org, "projects": projects}
 
 
-def save_projects(p): db_set("projects", p)
-def save_org(o):      db_set("globalOrg", o)
-def save_active(pid): db_set("activeProjectId", pid)
+def save_projects(projects: list) -> None:
+    project_repo.save_all(projects)
+
+
+def save_org(org: dict) -> None:
+    org_repo.save(org)
+
+
+def save_active(pid: str) -> None:
+    project_repo.set_active(pid)
 
 
 # ── Guard helpers ─────────────────────────────────────────────────────────────

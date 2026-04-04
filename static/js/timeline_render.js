@@ -2,7 +2,7 @@
 // TIMELINE – bar drag (right-edge / left-edge / whole-bar), gantt resize, render
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Bar drag events (right-edge · left-edge · whole-bar) ──────────────────
+// ── SECTION: bar drag (right-edge · left-edge · whole-bar) ───────────────────
 function initGanttBarResizeEvents(){
   if(ganttBarResizeSetup) return;
   ganttBarResizeSetup = true;
@@ -153,7 +153,7 @@ function initGanttBarResizeEvents(){
   });
 }
 
-// ── Gantt height drag ─────────────────────────────────────────────────────────
+// ── SECTION: gantt height drag + keyboard/click deselect ─────────────────────
 function startGanttResize(e){ e.preventDefault(); window.__ganttResizeDrag={startY:e.clientY,startH:ganttHeight}; }
 function initGanttResizeEvents(){
   if(ganttResizeSetup) return;
@@ -183,7 +183,7 @@ function initGanttResizeEvents(){
   });
 }
 
-// ── Gantt helper actions ──────────────────────────────────────────────────────
+// ── SECTION: helper actions (toggleGanttRow, setGanttStartDate) ──────────────
 function toggleGanttRow(phid){
   if(ganttCollapsed.has(phid))ganttCollapsed.delete(phid);else ganttCollapsed.add(phid);
   renderTimeline();
@@ -195,7 +195,7 @@ async function setGanttStartDate(pid,date){
   renderTimeline();
 }
 
-// ── Main render ───────────────────────────────────────────────────────────────
+// ── SECTION: main render (renderTimeline) — header SVG, grid, label rows, bars
 function renderTimeline(){
   const proj=ap(); if(!proj) return;
   proj.taskEdges = proj.taskEdges || [];

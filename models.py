@@ -4,7 +4,7 @@ TeamIQ – data models and Monte Carlo simulation engine.
 import uuid
 import numpy as np
 
-# ── Skill taxonomy ────────────────────────────────────────────────────────────
+# ── SECTION: skills taxonomy (TECH_SKILLS, PERS_SKILLS, ALL_SKILLS) ──────────
 TECH_SKILLS = [
     "Frontend", "Backend", "DevOps", "Architecture", "UX/Design",
     "Data/Analytics", "QA/Testing", "Security", "Project Mgmt",
@@ -16,14 +16,14 @@ ALL_SKILLS  = TECH_SKILLS + PERS_SKILLS
 DURATION_UNITS = ["days", "weeks", "months", "years"]
 WP_STATUSES    = ["not_started", "in_progress", "complete", "blocked"]
 
-# ── Defaults ──────────────────────────────────────────────────────────────────
+# ── SECTION: uid + default skills ────────────────────────────────────────────
 def default_skills() -> dict:
     return {sk: {"m": 5.0, "s": 1.5} for sk in ALL_SKILLS}
 
 def uid() -> str:
     return str(uuid.uuid4())[:8]
 
-# ── Duration helpers ──────────────────────────────────────────────────────────
+# ── SECTION: duration helpers (to_weeks, phase_weeks) ────────────────────────
 _TO_WEEKS = {"days": 1/7, "weeks": 1.0, "months": 4.333, "years": 52.0}
 
 def to_weeks(value: float, unit: str) -> float:
@@ -68,7 +68,8 @@ def new_work_package(name="New Work Package") -> dict:
         "endDateOverride":   None,
     }
 
-# ── Org hierarchy types ───────────────────────────────────────────────────────
+# ── SECTION: phase + WP schema builders (new_phase, new_work_package) ────────
+# ── SECTION: org hierarchy types (ORG_CHILD_TYPES, icons, colours) ───────────
 ORG_CHILD_TYPES = {
     "org":        ["division"],
     "division":   ["department"],
@@ -80,7 +81,7 @@ ORG_TYPE_ICON  = {"org": "🏢", "division": "🏛", "department": "📂", "team
 ORG_TYPE_COLOR = {"org": "#f0a030", "division": "#9b7ee8", "department": "#4a9eff",
                   "team": "#1fb885", "person": "#e8eaf0"}
 
-# ── Phase tree helpers ────────────────────────────────────────────────────────
+# ── SECTION: phase tree helpers (find_phase, all_phases_flat, remove_edges) ──
 def find_phase(phases: list, phid: str):
     """Depth-first search through top-level phases and their children."""
     for ph in phases:
@@ -106,7 +107,7 @@ def remove_phase_edges(proj: dict, phid: str):
     proj["phaseEdges"] = [e for e in proj.get("phaseEdges", [])
                           if e["from"] not in ids and e["to"] not in ids]
 
-# ── Monte Carlo ───────────────────────────────────────────────────────────────
+# ── SECTION: Monte Carlo (run_monte_carlo — edit here for CI or skill logic) ──
 def run_monte_carlo(members: list, phases: list, org_nodes: dict, n: int = 2000) -> dict:
     """
     phases    – top-level phases only (children expanded inside)
@@ -167,7 +168,7 @@ def run_monte_carlo(members: list, phases: list, org_nodes: dict, n: int = 2000)
             "team_exp":     team_exp}
 
 
-# ── Org tree helpers ──────────────────────────────────────────────────────────
+# ── SECTION: org tree helpers (find_node, flat_persons, build_org_lookup) ────
 def find_node(nodes: list, node_id: str):
     for n in nodes:
         if n["id"] == node_id: return n
@@ -205,7 +206,7 @@ def delete_node_from(nodes: list, node_id: str) -> bool:
     return False
 
 
-# ── Seed data (delegated to seed_data.py) ────────────────────────────────────
+# ── SECTION: seed data delegation (do not edit — change seed_data.py instead) ─
 from seed_data import seed_org as _seed_org_impl, seed_projects as _seed_projects_impl
 
 def seed_org() -> dict:

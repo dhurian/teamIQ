@@ -2,7 +2,7 @@
 // ANALYSIS  –  simulation, bottlenecks, recommendations, scenario compare
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── SECTION: helpers (_phaseTotalWeeks, _ciBar, _priBadge) ───────────────────
 function _phaseTotalWeeks(proj) {
   return (proj.phases || []).reduce((a, p) => a + (p.value || p.weeks || 0), 0);
 }
@@ -28,7 +28,7 @@ function _priBadge(p) {
   return `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:${col}22;color:${col};font-weight:700;border:1px solid ${col}44;">${p.toUpperCase()}</span>`;
 }
 
-// ── main render ───────────────────────────────────────────────────────────────
+// ── SECTION: render entry — shell HTML, parallel API fetch ────────────────────
 async function renderAnalysis() {
   const proj = ap(); if (!proj) return;
   const { teams, connections, phases } = proj;
@@ -58,7 +58,7 @@ async function renderAnalysis() {
   const bns  = bnData.bottlenecks || [];
   const recs = recData.recommendations || [];
 
-  // ── KPI row ────────────────────────────────────────────────────────────────
+  // ── SECTION: KPI + gap calculations ──────────────────────────────────────────
   const maxReq = {};
   phases.forEach(ph => Object.entries(ph.required || {}).forEach(([sk, lv]) => {
     if (!maxReq[sk] || maxReq[sk] < lv) maxReq[sk] = lv;
@@ -72,7 +72,7 @@ async function renderAnalysis() {
   const sc     = spCol(res.overall_prob || 0);
   const ci95   = res.overall_ci95;
 
-  // ── team cards ─────────────────────────────────────────────────────────────
+  // ── SECTION: team cards ───────────────────────────────────────────────────────
   const tCards = teams.map(t => {
     const tr  = tRes[t.id] || {}, pct = Math.round((tr.overall_prob || 0) * 100);
     const hcol = spCol(tr.overall_prob || 0);
@@ -92,7 +92,7 @@ async function renderAnalysis() {
     </div>`;
   }).join('');
 
-  // ── gap table ──────────────────────────────────────────────────────────────
+  // ── SECTION: gap table rows ───────────────────────────────────────────────────
   const gapRows = gaps.map(g => {
     const bc  = g.cov>=1?'#1fb885':g.cov>=.85?'#5dc890':g.cov>=.7?'#f0a030':'#e05050';
     const rb  = g.cov>=.85?'b-ok':g.cov>=.7?'b-med':'b-high';
@@ -113,7 +113,7 @@ async function renderAnalysis() {
       <td class="c">${contrib||'—'}</td></tr>`;
   }).join('');
 
-  // ── interface risk ─────────────────────────────────────────────────────────
+  // ── SECTION: interface risk rows ──────────────────────────────────────────────
   const connRisks = connections.map(c => {
     const ft = teams.find(t => t.id === c.from), tt = teams.find(t => t.id === c.to);
     if (!ft || !tt) return '';
@@ -126,7 +126,7 @@ async function renderAnalysis() {
       <td style="font-size:11px;color:var(--muted);">${overlap.slice(0,4).join(', ')||'—'}</td></tr>`;
   }).join('');
 
-  // ── phase timeline ─────────────────────────────────────────────────────────
+  // ── SECTION: phase timeline with CI bars ──────────────────────────────────────
   const timeline = phases.map((ph, pi) => {
     const prob = (res.phase_prob || [])[pi] || 0, pct = Math.round(prob * 100), col = PCOLS[pi % 4];
     const phCi = (res.phase_ci95 || [])[pi];
@@ -153,7 +153,7 @@ async function renderAnalysis() {
       </div></div>`;
   }).join('');
 
-  // ── bottleneck cards ───────────────────────────────────────────────────────
+  // ── SECTION: bottleneck cards ─────────────────────────────────────────────────
   const bnCards = bns.slice(0, 8).map(b => {
     const sevCol = b.is_critical ? '#e05050' : b.coverage < 1 ? '#f0a030' : '#1fb885';
     const pct    = Math.round(b.coverage * 100);
@@ -173,7 +173,7 @@ async function renderAnalysis() {
     </div>`;
   }).join('');
 
-  // ── recommendation cards ───────────────────────────────────────────────────
+  // ── SECTION: recommendation cards ─────────────────────────────────────────────
   const recCards = recs.map(r => {
     const colMap = {critical:'#e05050',high:'#f0a030',medium:'#4a9eff',low:'#1fb885'};
     const col    = colMap[r.priority] || '#8893a8';
@@ -187,7 +187,7 @@ async function renderAnalysis() {
     </div>`;
   }).join('');
 
-  // ── assemble HTML ──────────────────────────────────────────────────────────
+  // ── SECTION: HTML assembly (inject all cards into DOM) ────────────────────────
   document.getElementById('analysisContent').innerHTML = `
     <div class="grid4">
       <div class="metric"><label>Overall success</label>
@@ -239,7 +239,7 @@ async function renderAnalysis() {
     <!-- Scenario compare modal anchor -->
     <div id="scenarioCompareModal"></div>`;
 
-  // ── charts ─────────────────────────────────────────────────────────────────
+  // ── SECTION: charts (skill coverage bar + phase prob bar with CI plugin) ──────
   setTimeout(() => {
     dc('skillChart'); dc('phaseChart');
 
@@ -322,7 +322,7 @@ async function renderAnalysis() {
   }, 80);
 }
 
-// ── Scenario Compare ──────────────────────────────────────────────────────────
+// ── SECTION: scenario compare modal + project clone shortcut ──────────────────
 function openScenarioCompare() {
   const modal = document.getElementById('scenarioCompareModal');
   if (!modal) return;

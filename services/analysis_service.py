@@ -7,7 +7,7 @@ No Flask imports — all functions take/return plain dicts.
 from models import run_monte_carlo, build_org_lookup, all_phases_flat
 
 
-# ── Bottleneck Detection ──────────────────────────────────────────────────────
+# ── SECTION: bottleneck detection (detect_bottlenecks) ───────────────────────
 
 def detect_bottlenecks(proj: dict, global_org: dict, n_runs: int = 2000) -> dict:
     """
@@ -62,7 +62,7 @@ def detect_bottlenecks(proj: dict, global_org: dict, n_runs: int = 2000) -> dict
     }
 
 
-# ── Recommendation Generation ─────────────────────────────────────────────────
+# ── SECTION: recommendation generation (generate_recommendations) ────────────
 
 _PRIORITY_ORDER = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 

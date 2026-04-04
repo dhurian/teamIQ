@@ -32,7 +32,16 @@
       "Bash(kill 24348)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(python3 -c \"import json,sys; d=json.loads\\(sys.stdin.read\\(\\)\\); print\\(d.get\\(''''content'''',''''''''\\)[:3000]\\)\")",
+      "Bash(grep -E \"\\\\.py$|services|static\")",
+      "Bash(ls -la /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
+      "Bash(grep -h \"def api_\" /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
+      "Bash(grep -h \"@bp.route\" /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
+      "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_*.js)",
+      "Bash(grep -n \"skill gap\\\\|risk\\\\|bottleneck\\\\|recommend\" /Users/dhurianvitoldas/Documents/Development/teamiq/models.py /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
+      "Bash(grep -rh \"route.*POST\\\\|route.*GET\" /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
+      "Bash(git push:*)"
     ]
   }
 }

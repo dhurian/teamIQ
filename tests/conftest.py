@@ -89,3 +89,20 @@ def phase_id(proj):
 def team_id(proj):
     """Return the first team id."""
     return proj["teams"][0]["id"]
+
+
+@pytest.fixture()
+def state_data(client):
+    """Return a callable that fetches the latest API state."""
+    def _get_state():
+        return client.get("/api/state").get_json()
+    return _get_state
+
+
+@pytest.fixture()
+def project_state(state_data):
+    """Return a callable that fetches a project by id from API state."""
+    def _get_project(project_id):
+        data = state_data()
+        return next(p for p in data["projects"] if p["id"] == project_id)
+    return _get_project

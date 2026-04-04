@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "TeamIQ Dev (Flask)",
-      "runtimeExecutable": "python3",
+      "runtimeExecutable": "/Users/dhurianvitoldas/Documents/Development/teamiq/.venv/bin/python3",
       "runtimeArgs": ["/Users/dhurianvitoldas/Documents/Development/teamiq/app.py"],
       "port": 8080,
       "env": {

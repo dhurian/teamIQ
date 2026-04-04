@@ -103,7 +103,8 @@ function buildGanttRows(proj){
       const predEnd=[...preds[id]].map(pid=>byId[pid]?.endDay).filter(v=>v!=null);
       const minStart=predEnd.length?Math.max(...predEnd):0;
       const startOverride=projectDayFromDate(startMs, taskStartOverride(t));
-      let startDay=Math.max(minStart, startOverride!=null?startOverride:0);
+      // When an explicit start override is set it wins over predecessor constraints.
+      let startDay=startOverride!=null ? startOverride : minStart;
       const dur=taskDuration(t);
       const endOverride=projectDayFromDate(startMs, taskEndOverride(t));
       let endDay=endOverride!=null?Math.max(startDay, endOverride):startDay+dur;
@@ -168,8 +169,12 @@ function buildPhaseInspector(proj, ph){
       </div>
     </div>
     <div style="margin-bottom:10px;">
-      <div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Predecessors</div>
-      <select multiple onchange="setTaskPredecessors('${pid}','${ph.id}',[...this.selectedOptions].map(o=>o.value))" style="width:100%;min-height:92px;">${buildTaskDependencyOptions(proj, ph.id).replace(/<option value="([^"]+)"/g,(m,id)=>`<option value="${id}" ${predSet.has(id)?'selected':''}`)}</select>
+      <div style="font-size:10px;color:var(--faint);margin-bottom:2px;">Predecessors <span style="color:var(--faint);font-size:9px;">(Ctrl+click for multiple)</span></div>
+      <select id="predSel_${ph.id}" multiple style="width:100%;min-height:92px;">${buildTaskDependencyOptions(proj, ph.id).replace(/<option value="([^"]+)"/g,(m,id)=>`<option value="${id}" ${predSet.has(id)?'selected':''}`)}</select>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button class="btn btn-sm btn-primary" style="flex:1;" onclick="setTaskPredecessors('${pid}','${ph.id}',[...document.getElementById('predSel_${ph.id}').selectedOptions].map(o=>o.value))">Set predecessors</button>
+        <button class="btn btn-sm" onclick="document.getElementById('predSel_${ph.id}').selectedIndex=-1;setTaskPredecessors('${pid}','${ph.id}',[])">Clear</button>
+      </div>
     </div>
     <div style="font-size:11px;color:var(--faint);margin-bottom:6px;">Toggle required skills</div>
     <div>${ALL_SKILLS.map(sk=>{ const on=ph.required?.[sk]!==undefined; const col='#4a9eff'; return `<button class="skill-toggle ${on?'on':''}" style="${on?`color:${col};border-color:${col};background:${col}18;`:''}" onclick="togglePhaseSkill('${pid}','${ph.id}','${sk}')">${sk}</button>`; }).join('')}</div>
@@ -195,7 +200,14 @@ function buildWpInspector(proj, wp){
       <div class="flex-ac"><input type="number" min="0.1" step="0.5" value="${wp.value??1}" onchange="patchWP('${pid}','${wp.id}',{value:parseFloat(this.value)})" style="width:72px;"><select onchange="patchWP('${pid}','${wp.id}',{unit:this.value})">${DURATION_UNITS.map(u=>`<option value="${u}" ${(wp.unit||'weeks')===u?'selected':''}>${u}</option>`).join('')}</select></div>
     </div>
     <div style="margin-bottom:10px;"><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Status</div><select onchange="patchWP('${pid}','${wp.id}',{status:this.value})" style="width:100%;">${WP_STATUSES.map(s=>`<option value="${s}" ${wp.status===s?'selected':''}>${WP_LABELS[s]||s}</option>`).join('')}</select></div>
-    <div style="margin-bottom:10px;"><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Predecessors</div><select multiple onchange="setTaskPredecessors('${pid}','${wp.id}',[...this.selectedOptions].map(o=>o.value))" style="width:100%;min-height:92px;">${buildTaskDependencyOptions(proj, wp.id).replace(/<option value="([^"]+)"/g,(m,id)=>`<option value="${id}" ${predSet.has(id)?'selected':''}`)}</select></div>
+    <div style="margin-bottom:10px;">
+      <div style="font-size:10px;color:var(--faint);margin-bottom:2px;">Predecessors <span style="color:var(--faint);font-size:9px;">(Ctrl+click for multiple)</span></div>
+      <select id="predSel_${wp.id}" multiple style="width:100%;min-height:92px;">${buildTaskDependencyOptions(proj, wp.id).replace(/<option value="([^"]+)"/g,(m,id)=>`<option value="${id}" ${predSet.has(id)?'selected':''}`)}</select>
+      <div style="display:flex;gap:6px;margin-top:4px;">
+        <button class="btn btn-sm btn-primary" style="flex:1;" onclick="setTaskPredecessors('${pid}','${wp.id}',[...document.getElementById('predSel_${wp.id}').selectedOptions].map(o=>o.value))">Set predecessors</button>
+        <button class="btn btn-sm" onclick="document.getElementById('predSel_${wp.id}').selectedIndex=-1;setTaskPredecessors('${pid}','${wp.id}',[])">Clear</button>
+      </div>
+    </div>
     <div style="margin-bottom:10px;"><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Description</div><textarea onchange="patchWP('${pid}','${wp.id}',{description:this.value})" style="width:100%;min-height:72px;resize:vertical;">${wp.description||''}</textarea></div>
     <div><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Deliverables</div><input type="text" value="${(wp.deliverables||[]).join(', ')}" onchange="patchWP('${pid}','${wp.id}',{deliverables:this.value.split(',').map(s=>s.trim()).filter(Boolean)})" style="width:100%;"></div>
   `;
@@ -210,6 +222,7 @@ function buildGanttDetailHtml(proj){
 
 // ── Inspector drag & floating panel ──────────────────────────────────────────
 function openGanttDetail(id,type,evt){
+  if(evt && evt.stopPropagation) evt.stopPropagation();
   ganttSelId = ganttSelId===id ? null : id;
   ganttSelType = type;
   if(evt && ganttSelId){
@@ -281,6 +294,20 @@ function initGanttResizeEvents(){
     if(ll) ll.style.height=ganttHeight+'px';
   });
   window.addEventListener('mouseup',()=>{ window.__ganttResizeDrag=null; });
+  // Click on the SVG canvas (not on a bar) deselects current row
+  window.addEventListener('click', e=>{
+    if(!ganttSelId) return;
+    const scroll=document.getElementById('ganttScroll');
+    if(!scroll) return;
+    // Deselect if click was inside ganttScroll but not on a labelled bar
+    if(scroll.contains(e.target) && !e.target.closest('[data-gbar]')){
+      ganttSelId=null; renderTimeline();
+    }
+  });
+  // ESC closes the inspector
+  window.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && ganttSelId){ ganttSelId=null; renderTimeline(); }
+  });
 }
 
 // ── Gantt helper actions ──────────────────────────────────────────────────────
@@ -349,7 +376,7 @@ function renderTimeline(){
     const moveHtml=row.type==='wp'
       ? `<button onclick="event.stopPropagation();moveWP('${proj.id}','${row.wp.id}',-1)" title="Move up" style="${aBtnStyle}color:var(--muted)">▲</button><button onclick="event.stopPropagation();moveWP('${proj.id}','${row.wp.id}',1)" title="Move down" style="${aBtnStyle}color:var(--muted)">▼</button>`
       : `<button onclick="event.stopPropagation();movePhase('${proj.id}','${row.ph.id}',-1)" title="Move up" style="${aBtnStyle}color:var(--muted)">▲</button><button onclick="event.stopPropagation();movePhase('${proj.id}','${row.ph.id}',1)" title="Move down" style="${aBtnStyle}color:var(--muted)">▼</button>`;
-    labelRows += `<div style="height:${ROW_H}px;display:flex;align-items:center;padding-left:${indent+6}px;border-bottom:1px solid var(--border);gap:6px;cursor:pointer;background:${isSel?mainColor+'14':stripe?'rgba(255,255,255,0.018)':'transparent'};border-left:${isSel?`2px solid ${mainColor}`:'2px solid transparent'};" ondblclick="openGanttDetail('${row.id}','${row.type}', event)" onmouseenter="this.querySelector('.gla').style.display='flex'" onmouseleave="this.querySelector('.gla').style.display='none'">
+    labelRows += `<div style="height:${ROW_H}px;display:flex;align-items:center;padding-left:${indent+6}px;border-bottom:1px solid var(--border);gap:6px;cursor:pointer;background:${isSel?mainColor+'14':stripe?'rgba(255,255,255,0.018)':'transparent'};border-left:${isSel?`2px solid ${mainColor}`:'2px solid transparent'};" onclick="openGanttDetail('${row.id}','${row.type}', event)" onmouseenter="this.querySelector('.gla').style.display='flex'" onmouseleave="this.querySelector('.gla').style.display='none'">
       <span style="font-size:10px;color:var(--muted);width:12px;flex-shrink:0;" onclick="event.stopPropagation();${row.type!=='wp'?`toggleGanttRow('${row.ph.id}')`:''}">${toggle}</span>
       <div style="width:${row.type==='wp'?6:8}px;height:${row.type==='wp'?6:8}px;border-radius:${row.type==='wp'?'50%':'2px'};background:${mainColor};flex-shrink:0;"></div>
       <div style="min-width:0;flex:1;">

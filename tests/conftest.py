@@ -25,13 +25,8 @@ def app():
     os.close(db_fd)
     db_module.DB_PATH = db_path
 
-    # Re-initialise the DB schema on the temp file
+    # Re-initialise the DB schema on the temp file (creates all tables)
     db_module.init_db()
-
-    # Wipe any residual state (in case the module cached something)
-    db_module.db_delete("projects")
-    db_module.db_delete("globalOrg")
-    db_module.db_delete("activeProjectId")
 
     # Import after patching DB_PATH so create_app() uses the temp DB
     from app import create_app
@@ -50,15 +45,15 @@ def app():
 @pytest.fixture()
 def client(app):
     """Flask test client with a clean DB before each test."""
-    import db as db_module
+    from repositories import project_repo, org_repo
     from models import seed_projects, seed_org
 
     # Reset to clean seed state before every test
     projects = seed_projects()
-    org = seed_org()
-    db_module.db_set("projects", projects)
-    db_module.db_set("globalOrg", org)
-    db_module.db_set("activeProjectId", projects[0]["id"])
+    org      = seed_org()
+    project_repo.save_all(projects)
+    org_repo.save(org)
+    project_repo.set_active(projects[0]["id"])
 
     with app.test_client() as c:
         yield c
@@ -74,7 +69,7 @@ def proj_id(client):
 @pytest.fixture()
 def proj(client, proj_id):
     """Return the active project dict from seed data."""
-    r = client.get("/api/state")
+    r    = client.get("/api/state")
     data = r.get_json()
     return next(p for p in data["projects"] if p["id"] == proj_id)
 

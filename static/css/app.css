@@ -117,3 +117,17 @@ tr:last-child td{border-bottom:none;}
 .pick-row input[type=checkbox]{accent-color:var(--teal);width:14px;height:14px;cursor:pointer;}
 .spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Utility classes — use in JS templates instead of inline styles ─────────
+   Replacing inline styles with these saves ~40-60 chars per occurrence.
+   .trunc     → white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+   .mono      → font-family:var(--mono)
+   .label-sm  → font-size:11px;color:var(--muted)
+   .label-xs  → font-size:10px;color:var(--faint)
+   .fw7       → font-weight:700
+   ─────────────────────────────────────────────────────────────────────── */
+.trunc{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mono{font-family:var(--mono);}
+.label-sm{font-size:11px;color:var(--muted);}
+.label-xs{font-size:10px;color:var(--faint);}
+.fw7{font-weight:700;}

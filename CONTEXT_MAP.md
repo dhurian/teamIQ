@@ -148,12 +148,13 @@ blueprints/requirements.py          routes
 
 ---
 
-## Dead files — do NOT load (not in index.html)
+## Dead files — DELETED (commit edd4554 → current)
 ```
-static/js/panel_timeline.js        superseded by timeline_render.js + timeline_scheduling.js
-static/js/timeline_layout.js       superseded by timeline_scheduling.js
-static/js/timeline_svg.js          superseded by timeline_render.js
-static/js/timeline_events.js       superseded by timeline_render.js
+panel_timeline.js        443 lines  ┐
+panel_timeline_helpers.js 122 lines  │  all deleted — superseded by
+timeline_events.js        89 lines  │  timeline_render.js + timeline_scheduling.js
+timeline_layout.js       169 lines  │
+timeline_svg.js           72 lines  ┘  (895 lines total removed)
 ```
 
 ---
@@ -162,12 +163,26 @@ static/js/timeline_events.js       superseded by timeline_render.js
 
 | File | Lines | Tokens | Sections |
 |---|---|---|---|
-| timeline_render.js | 346 | 5.8K | bar-drag · gantt-height · helper-actions · main-render |
-| panel_analysis.js | 403 | 6.3K | helpers · render-entry · KPI-calcs · team-cards · gap-table · interface-risk · phase-timeline · bottleneck-cards · recommendation-cards · HTML-assembly · charts · scenario-compare |
+| timeline_render.js | 346 | 5.8K | bar-drag·5 · gantt-height·156 · helper-actions·186 · main-render·198 |
+| panel_analysis.js | 403 | 6.3K | helpers·5 · render-entry·31 · KPI·61 · team-cards·75 · gap-table·95 · iface-risk·116 · phase-timeline·129 · bottleneck-cards·156 · rec-cards·176 · HTML-assembly·190 · charts·242 · scenario-compare·325 |
 | panel_org_hier_helpers.js | 213 | 3.7K | org-map · org-detail · org-tree · org-editor |
 | phase_diagram.js | 212 | 2.5K | SVG-nodes · edges · drag-pan · conn-mode · auto-layout |
 | services/team_service.py | 204 | 2.0K | team-CRUD · member-CRUD · org-import · connections |
-| models.py | 215 | 2.2K | skills-taxonomy · duration-helpers · phase-WP-schema · org-types · phase-tree · Monte-Carlo · org-tree-helpers |
+| models.py | 215 | 2.2K | skills·7 · uid·19 · duration·26 · phase-WP-schema·71 · org-types·72 · phase-tree·84 · Monte-Carlo·110 · org-tree·171 · seed-delegation·209 |
+
+## JS colour constants (utils.js — C object)
+Use `C.blue C.teal C.amber C.red C.purple C.muted C.faint` instead of hex literals.
+Mirrors CSS :root variables (--blue, --teal, --amber, --red, --muted, --faint).
+
+## CSS utility classes (app.css)
+Use in template strings instead of long inline styles:
+| Class | Replaces |
+|---|---|
+| `.trunc` | `white-space:nowrap;overflow:hidden;text-overflow:ellipsis` |
+| `.mono` | `font-family:var(--mono)` |
+| `.label-sm` | `font-size:11px;color:var(--muted)` |
+| `.label-xs` | `font-size:10px;color:var(--faint)` |
+| `.fw7` | `font-weight:700` |
 
 ---
 

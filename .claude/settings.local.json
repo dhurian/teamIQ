@@ -41,7 +41,21 @@
       "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_*.js)",
       "Bash(grep -n \"skill gap\\\\|risk\\\\|bottleneck\\\\|recommend\" /Users/dhurianvitoldas/Documents/Development/teamiq/models.py /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
       "Bash(grep -rh \"route.*POST\\\\|route.*GET\" /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/templates/*.html /Users/dhurianvitoldas/Documents/Development/teamiq/models.py /Users/dhurianvitoldas/Documents/Development/teamiq/app.py /Users/dhurianvitoldas/Documents/Development/teamiq/seed_data.py /Users/dhurianvitoldas/Documents/Development/teamiq/static/css/app.css)",
+      "Bash(grep -r \"const.*=\" /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(grep -n \"const.*COLS\\\\|const.*LABELS\\\\|const.*NODE_W\\\\|const.*PH_W\\\\|const.*PCOLS\\\\|const.*WP_COLS\" /Users/dhurianvitoldas/Documents/Development/teamiq/templates/index.html /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/boot.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(wc -c /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js /Users/dhurianvitoldas/Documents/Development/teamiq/blueprints/*.py /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py)",
+      "Bash(grep -r \"^def \" /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py)",
+      "Bash(ls -1 /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(xargs -n1 basename)",
+      "Bash(grep -n \"border-radius:4px\" /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(grep -o 'display:flex;align-items:center' /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(grep -o 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/*.js)",
+      "Bash(grep -h \"^def \" /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py)",
+      "Bash(ls /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/panel_timeline*.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_events.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_layout.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_svg.js)",
+      "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/panel_timeline*.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_events.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_layout.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_svg.js)",
+      "Bash(git rm:*)"
     ]
   }
 }

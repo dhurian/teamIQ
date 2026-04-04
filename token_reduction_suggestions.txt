@@ -1,0 +1,83 @@
+TeamIQ token-reduction suggestions (re-checked)
+
+Why token usage feels high in this repo
+- A small set of files dominate context size:
+  * static/js/panel_phases.js (457 lines)
+  * static/js/panel_timeline.js (416 lines)
+  * models.py (305 lines, includes logic + large seed payloads)
+  * templates/index.html (259 lines, large inline CSS + shell markup)
+
+High-impact actions (in order)
+
+1) Split the largest frontend files into feature modules
+- Break each panel file into focused parts:
+  - render_*.js (DOM templates)
+  - events_*.js (handlers)
+  - state_*.js (panel-local UI state)
+  - api_*.js (fetch/patch wiring)
+- Start with static/js/panel_phases.js, then panel_timeline.js.
+- Result: Most tickets will need 1-2 files instead of 1 huge file.
+
+2) Extract inline CSS from templates/index.html
+- Move the long <style> block to static/css/app.css.
+- Keep index.html as structure + script includes only.
+- Result: lower baseline context for every frontend task.
+
+3) Move seed/sample payloads out of models.py
+- Keep models.py for helpers + simulation logic only.
+- Move seed_org()/seed_projects() payloads to seed_data.py or JSON fixtures loaded by helper functions.
+- Result: backend model edits no longer require loading large static example data.
+
+4) Add CONTEXT_MAP.md for targeted loading
+- Add a compact map with sections:
+  - "If editing endpoint X -> open files A/B"
+  - "If editing panel Y -> open files C/D"
+  - "State flow: /api/state -> frontend render"
+- Result: less accidental over-loading in prompts.
+
+5) Add assistant ignore rules
+- Add tool-specific ignore files (for your assistant) to skip low-value files:
+  - static/pwa/icons/*
+  - static/favicon.ico
+  - LICENSE
+- Optional for coding sessions: ignore most tests unless task is test-related.
+- Result: retrieval focuses on code that matters to current tasks.
+
+6) Reduce repeated test boilerplate with helpers
+- Introduce helper functions/fixtures for repeated API flows:
+  - create_team(...)
+  - create_member(...)
+  - load_project_state(...)
+- Result: smaller test files and smaller diffs/prompts when changing behavior.
+
+7) Keep constants single-sourced and referenced
+- Continue centralizing shared constants from backend metadata endpoints.
+- Avoid duplicating skill lists/status lists in multiple frontend files.
+- Result: fewer files needed to reason about consistency bugs.
+
+Practical token-efficient workflow
+- For backend endpoint work:
+  1) app.py
+  2) one blueprint file
+  3) one service file
+  4) one relevant test file
+- For frontend panel work:
+  1) one panel file
+  2) static/js/state.js (only if state needed)
+  3) static/js/api_actions.js (only if API wiring needed)
+  4) one test/e2e artifact if applicable
+
+Suggested 1-week implementation plan
+Day 1-2:
+- Extract CSS from templates/index.html to static/css/app.css.
+
+Day 3-4:
+- Split static/js/panel_phases.js into modules without behavior changes.
+
+Day 5:
+- Move seed payloads from models.py to seed_data.py.
+- Add CONTEXT_MAP.md and assistant ignore rules.
+
+Success metric to track
+- Average number of files included per task prompt.
+- Target: reduce from ~6-10 files to ~2-4 files for typical feature edits.

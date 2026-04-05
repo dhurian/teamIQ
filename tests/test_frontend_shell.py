@@ -12,7 +12,6 @@ _EXPECTED_SCRIPTS = [
     '/static/js/panel_teams.js',
     '/static/js/panel_phases_helpers.js',
     '/static/js/phase_card.js',
-    '/static/js/phase_actions.js',
     '/static/js/phase_diagram.js',
     '/static/js/panel_phases.js',
     '/static/js/timeline_utils.js',

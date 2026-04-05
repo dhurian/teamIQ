@@ -6,7 +6,7 @@ let orgMapPan = {x:60,y:50}, orgMapZoom = 1, orgMapDragging = null, orgMapSelId 
 let orgNodeDrag = null, orgConnFrom = null;
 let orgPan={x:20,y:20}, orgZoom=1, orgPanning=null, orgEventsSetup=false;
 let charts = {};
-let importChecked = new Set();
+// importChecked + importAllocations live in import_picker.js
 let ganttCollapsed = new Set();
 let ganttZoom = 1;
 let ganttSelId = null;        // selected item id (phase / subphase / WP)

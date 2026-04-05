@@ -76,14 +76,20 @@ function _resPersonRow(p) {
     ? `<div style="height:100%;flex:1;background:repeating-linear-gradient(45deg,${C.red}55,${C.red}55 3px,transparent 3px,transparent 8px);"></div>`
     : '';
 
-  // Per-project chips clickable → switch to that project's teams tab
-  const chips = p.projects.map(pr =>
-    `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:${pr.color}18;color:${pr.color};border:1px solid ${pr.color}33;margin:2px;cursor:pointer;"
-      onclick="switchProject('${pr.projectId}');setTab('teams')" title="Go to ${pr.teamName}">
-      <span style="width:6px;height:6px;border-radius:50%;background:${pr.color};flex-shrink:0;"></span>
-      ${pr.projectName} · ${pr.allocation}%
-    </span>`
-  ).join('');
+  // Per-project chips with inline editable allocation
+  const chips = p.projects.map(pr => {
+    const aid = `ra_${pr.memberId.replace(/[^a-z0-9]/gi,'_')}`;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:10px;background:${pr.color}18;color:${pr.color};border:1px solid ${pr.color}33;margin:2px;">
+      <span style="width:6px;height:6px;border-radius:50%;background:${pr.color};flex-shrink:0;cursor:pointer;"
+        onclick="switchProject('${pr.projectId}');setTab('teams')" title="Go to ${pr.teamName}"></span>
+      <span style="cursor:pointer;" onclick="switchProject('${pr.projectId}');setTab('teams')" title="Go to ${pr.teamName}">${pr.projectName}</span>
+      ·
+      <input id="${aid}" type="number" min="0" max="200" value="${pr.allocation}"
+        style="width:40px;font-size:11px;font-weight:700;color:${pr.color};background:transparent;border:none;border-bottom:1px solid ${pr.color}55;text-align:center;padding:0;outline:none;font-family:var(--mono);"
+        title="Allocation to ${pr.projectName} (%)"
+        onchange="_resUpdateAlloc('${pr.projectId}','${pr.memberId}',this.value)">%
+    </span>`;
+  }).join('');
 
   return `<div class="card mb15">
     <div style="display:grid;grid-template-columns:44px 1fr 90px;gap:14px;align-items:center;">
@@ -115,4 +121,12 @@ function _resSetFilter(f) {
   } else {
     renderResources();
   }
+}
+
+// ── SECTION: inline allocation update (_resUpdateAlloc) ───────────────────────
+async function _resUpdateAlloc(projectId, memberId, val) {
+  const alloc = Math.min(200, Math.max(0, parseInt(val) || 0));
+  await PATCH(`/api/projects/${projectId}/members/${memberId}`, { allocation: alloc });
+  // Refresh the full resources view to reflect new totals
+  renderResources();
 }

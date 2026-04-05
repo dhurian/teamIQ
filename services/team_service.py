@@ -80,6 +80,10 @@ def update_member(proj: dict, mid: str, data: dict) -> dict:
                     member[f] = data[f]
             if "allocation" in data:
                 member["allocation"] = max(0, min(200, int(data["allocation"])))
+            if "alloc_mode" in data:
+                member["alloc_mode"] = data["alloc_mode"]      # "bulk" | "scheduled"
+            if "alloc_schedule" in data:
+                member["alloc_schedule"] = data["alloc_schedule"]   # full replace
             if "skills" in data:
                 member["skills"] = data["skills"]
             if "skill" in data:
@@ -150,9 +154,16 @@ def import_org_members(proj: dict, tid: str, org_ids: list, global_org: dict) ->
     already = {m["orgId"] for t in proj["teams"]
                for m in t["members"] if m.get("orgId")}
     added = 0
-    for oid in org_ids:
+    for entry in org_ids:
+        # Accept either plain string orgId or {"orgId": ..., "allocation": ...}
+        if isinstance(entry, dict):
+            oid   = entry.get("orgId", "")
+            alloc = max(0, min(200, int(entry.get("allocation", 100))))
+        else:
+            oid   = entry
+            alloc = 100
         if oid not in already and oid in lookup:
-            team["members"].append({"id": "m_" + uid(), "orgId": oid})
+            team["members"].append({"id": "m_" + uid(), "orgId": oid, "allocation": alloc})
             already.add(oid)
             added += 1
     proj["selTeamId"] = tid

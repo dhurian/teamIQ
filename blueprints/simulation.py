@@ -40,6 +40,7 @@ def api_bottlenecks():
     state  = load_state()
     proj   = get_project(state["projects"], pid)
     result = analysis_service.detect_bottlenecks(proj, state["globalOrg"], n_runs)
+    result["critical_chain"] = analysis_service.critical_chain_report(proj)
     return jsonify(result)
 
 

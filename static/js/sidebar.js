@@ -32,6 +32,7 @@ function setTab(tab){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   const pm = {overview:'panelOverview',orghier:'panelOrgHier',resources:'panelResources',teams:'panelTeams',phases:'panelPhases',timeline:'panelTimeline',orgchart:'panelOrgchart',bizcase:'panelBizcase',reqs:'panelReqs',analysis:'panelAnalysis'};
   document.getElementById(pm[tab])?.classList.add('active');
+  document.querySelector('.main')?.scrollTo(0, 0);
   rerender(tab);
 }
 

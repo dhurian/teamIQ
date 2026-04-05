@@ -30,8 +30,11 @@ async function renderAnalysis() {
 
   const res  = data.combined;
   const tRes = data.teams;
-  const bns  = bnData.bottlenecks || [];
-  const recs = recData.recommendations || [];
+  // Cache overall sim prob on project for bizcase risk-adjustment
+  if (proj) proj.lastSimProb = res.overall_prob ?? 1;
+  const bns   = bnData.bottlenecks || [];
+  const recs  = recData.recommendations || [];
+  const chain = bnData.critical_chain || { chain: [], total_chain_weeks: 0, has_cycle: false };
 
   // ── SECTION: KPI + gap calculations ──────────────────────────────────────────
   const maxReq = {};
@@ -90,6 +93,10 @@ async function renderAnalysis() {
 
   if (phases.length) sec.timeline = _aSection('timeline', '🗓', 'Phase Timeline & Readiness',
     _buildTimeline(phases, res, tRes, teams));
+
+  sec.chain = _aSection('chain', '🔗', 'Critical Dependency Chain',
+    _buildCriticalChain(chain.chain, chain.total_chain_weeks, chain.has_cycle),
+    chain.chain.length ? `(${chain.total_chain_weeks}w critical path)` : '');
 
   document.getElementById('analysisContent').innerHTML =
     `<div id="analysisSections">${_aOrder.map(id => sec[id] || '').join('')}</div>`;

@@ -131,3 +131,55 @@ function _buildRecCards(recs) {
     </div>`;
   }).join('');
 }
+
+// ── SECTION: critical chain ───────────────────────────────────────────────────
+function _buildCriticalChain(chain, totalWeeks, hasCycle) {
+  if (!chain || chain.length === 0) {
+    return `<div style="padding:2rem;text-align:center;color:var(--faint);font-size:13px;">
+      No phase dependencies defined yet — add connections in the Phases diagram view.
+    </div>`;
+  }
+
+  if (hasCycle) {
+    return `<div style="padding:1rem;background:${C.red}11;border:1px solid ${C.red}33;border-radius:8px;color:${C.red};font-size:13px;">
+      ⚠ Circular dependency detected in phase edges — fix the cycle to see the critical chain.
+    </div>`;
+  }
+
+  const rows = chain.map((ph, i) => {
+    const isLast = i === chain.length - 1;
+    const blockCol = ph.blocks_count > 2 ? C.red : ph.blocks_count > 0 ? C.amber : C.teal;
+    const blockTxt = ph.blocks_count > 0
+      ? `<span style="font-size:11px;color:${blockCol};font-weight:700;">blocks ${ph.blocks_count} phase${ph.blocks_count!==1?'s':''}</span>`
+      : `<span style="font-size:11px;color:${C.teal};">leaf</span>`;
+    const tooltip = ph.blocked_phases.length
+      ? `title="If delayed: ${ph.blocked_phases.join(', ')}"`
+      : '';
+    return `
+      <div style="display:flex;align-items:stretch;gap:0;">
+        <div style="display:flex;flex-direction:column;align-items:center;width:28px;flex-shrink:0;">
+          <div style="width:12px;height:12px;border-radius:50%;background:${blockCol};border:2px solid var(--bg1);flex-shrink:0;margin-top:4px;"></div>
+          ${!isLast?`<div style="flex:1;width:2px;background:var(--border);margin:2px 0;"></div>`:''}
+        </div>
+        <div class="card-sm" style="flex:1;margin-bottom:${isLast?0:6}px;border-left:3px solid ${blockCol};" ${tooltip}>
+          <div class="flex-between" style="margin-bottom:4px;">
+            <span style="font-weight:700;font-size:13px;">${ph.phaseName}</span>
+            ${blockTxt}
+          </div>
+          <div style="display:flex;gap:12px;">
+            <span style="font-size:11px;color:var(--muted);">⏱ ${ph.duration_weeks}w</span>
+            ${ph.blocked_phases.length?`<span style="font-size:11px;color:var(--faint);">→ ${ph.blocked_phases.slice(0,2).join(', ')}${ph.blocked_phases.length>2?'…':''}</span>`:''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:8px 12px;background:var(--bg3);border-radius:8px;">
+      <span style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">Critical path</span>
+      <span style="font-size:22px;font-weight:700;font-family:var(--mono);color:${C.amber};">${totalWeeks}w</span>
+      <span style="font-size:11px;color:var(--faint);">${chain.length} phases in sequence</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--red);">⚠ Any delay on these phases delays the entire project</span>
+    </div>
+    <div style="padding:4px 0;">${rows}</div>`;
+}

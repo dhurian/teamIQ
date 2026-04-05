@@ -124,3 +124,11 @@ function wpRow(wp, proj, ph){
     </div>
   </div>`;
 }
+
+// ── SECTION: phase selection (merged from phase_actions.js) ───────────────────
+let selPhaseId = null;
+
+function selectPhase(phid){
+  selPhaseId = (selPhaseId === phid ? null : phid);
+  renderPhases();
+}

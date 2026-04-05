@@ -31,6 +31,18 @@ async function renderOverview(){
     p.phases.forEach(ph=>Object.entries(ph.required||{}).forEach(([sk,lv])=>{if(!maxReq[sk]||maxReq[sk]<lv)maxReq[sk]=lv;}));
     const crit=Object.entries(maxReq).filter(([sk,req])=>(r.team_exp?.[sk]||0)<req*.85).length;
     const linked=allM.filter(m=>m.orgId).length;
+    // ROI inline calc
+    const bc=p.businessCase||{};
+    const costK=bc.cost_k||0, benefitYrK=bc.benefit_yr_k||0, horizYrs=bc.horizon_yrs||5, dr=bc.discount_rate||0.08;
+    let roiChip='';
+    if(costK>0||benefitYrK>0){
+      let npv=-costK;
+      for(let t=1;t<=horizYrs;t++) npv+=benefitYrK/Math.pow(1+dr,t);
+      const roiPct=costK>0?Math.round((npv/costK)*100):0;
+      const adjRoi=Math.round(roiPct*(r.overall_prob||1));
+      const roiCol=adjRoi>=80?C.teal:adjRoi>=20?C.amber:C.red;
+      roiChip=`<div><div class="label-xs">ROI (adj.)</div><div style="font-size:13px;font-weight:700;color:${roiCol};">${adjRoi}%</div></div>`;
+    }
     return `<div class="project-card ${p.id===S.activeProjectId?'active-card':''}" style="--proj-color:${p.color};" onclick="switchProject('${p.id}');setTab('analysis')">
       <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;margin-top:4px;">
         <div><div style="font-size:15px;font-weight:700;">${p.name}</div>
@@ -47,6 +59,7 @@ async function renderOverview(){
         <div><div class="label-xs">Critical gaps</div><div style="font-size:13px;font-weight:700;color:${crit>0?C.red:C.teal};">${crit}</div></div>
         <div><div class="label-xs">Interfaces</div><div style="font-size:13px;font-weight:700;">${p.connections.length}</div></div>
         <div><div class="label-xs">From org</div><div style="font-size:13px;font-weight:700;color:var(--teal);">${linked}</div></div>
+        ${roiChip}
       </div></div>`;
   }).join('');
   document.getElementById('overviewCards').innerHTML=cards;

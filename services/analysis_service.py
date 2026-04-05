@@ -4,7 +4,7 @@ services/analysis_service.py
 Bottleneck detection and recommendation generation.
 No Flask imports — all functions take/return plain dicts.
 """
-from models import run_monte_carlo, build_org_lookup, all_phases_flat
+from models import run_monte_carlo, build_org_lookup, all_phases_flat, phase_weeks
 
 
 # ── SECTION: bottleneck detection (detect_bottlenecks) ───────────────────────
@@ -134,3 +134,135 @@ def generate_recommendations(proj: dict, global_org: dict,
 
     recs.sort(key=lambda r: _PRIORITY_ORDER.get(r["priority"], 9))
     return {"recommendations": recs, "count": len(recs)}
+
+
+# ── SECTION: critical chain (critical_chain_report) ───────────────────────────
+
+def _build_phase_graph(phases_flat: list, phase_edges: list) -> dict:
+    """Returns {phase_id: [downstream_phase_ids]} adjacency dict."""
+    ids = {ph["id"] for ph in phases_flat}
+    graph: dict[str, list] = {ph["id"]: [] for ph in phases_flat}
+    for edge in phase_edges:
+        src, dst = edge.get("from"), edge.get("to")
+        if src in ids and dst in ids:
+            graph[src].append(dst)
+    return graph
+
+
+def _topo_sort(graph: dict) -> list:
+    """
+    Kahn's algorithm — returns topologically sorted node list.
+    Returns empty list if a cycle is detected.
+    """
+    in_deg: dict[str, int] = {n: 0 for n in graph}
+    for neighbours in graph.values():
+        for nb in neighbours:
+            if nb in in_deg:
+                in_deg[nb] += 1
+
+    queue = [n for n, d in in_deg.items() if d == 0]
+    order: list[str] = []
+    while queue:
+        node = queue.pop(0)
+        order.append(node)
+        for nb in graph.get(node, []):
+            in_deg[nb] -= 1
+            if in_deg[nb] == 0:
+                queue.append(nb)
+
+    return order if len(order) == len(graph) else []  # empty = cycle
+
+
+def _longest_path(graph: dict, durations: dict) -> list:
+    """
+    Returns the list of node ids on the longest (critical) path.
+    Assumes *graph* is a DAG (run _topo_sort first to verify).
+    """
+    topo = _topo_sort(graph)
+    if not topo:
+        return list(graph.keys())  # cycle fallback — return all
+
+    dist:  dict[str, float] = {n: 0.0 for n in graph}
+    prev:  dict[str, str | None] = {n: None for n in graph}
+
+    for node in topo:
+        for nb in graph.get(node, []):
+            new_dist = dist[node] + durations.get(node, 0.0)
+            if new_dist > dist[nb]:
+                dist[nb] = new_dist
+                prev[nb] = node
+
+    # Trace back from the node with the longest distance
+    end = max(dist, key=lambda n: dist[n] + durations.get(n, 0.0))
+    path: list[str] = []
+    cur: str | None = end
+    while cur is not None:
+        path.append(cur)
+        cur = prev.get(cur)
+    path.reverse()
+    return path
+
+
+def _count_downstream(node: str, graph: dict) -> list:
+    """BFS — returns list of all reachable node ids from *node* (exclusive)."""
+    visited: set[str] = set()
+    queue = list(graph.get(node, []))
+    while queue:
+        n = queue.pop(0)
+        if n not in visited:
+            visited.add(n)
+            queue.extend(graph.get(n, []))
+    return list(visited)
+
+
+def critical_chain_report(proj: dict) -> dict:
+    """
+    Compute the critical (longest) dependency chain through the project's
+    phase graph.
+
+    Returns:
+      {
+        "chain": [
+          {
+            "phaseId": str,
+            "phaseName": str,
+            "duration_weeks": float,
+            "blocks_count": int,        # how many phases fail if this one is late
+            "blocked_phases": [str],    # names of those phases
+          }, ...
+        ],
+        "total_chain_weeks": float,
+        "has_cycle": bool,
+      }
+    """
+    flat        = all_phases_flat(proj.get("phases", []))
+    phase_edges = proj.get("phaseEdges", [])
+    id_to_phase = {ph["id"]: ph for ph in flat}
+
+    graph     = _build_phase_graph(flat, phase_edges)
+    topo      = _topo_sort(graph)
+    has_cycle = len(topo) == 0
+
+    durations = {ph["id"]: phase_weeks(ph) for ph in flat}
+    chain_ids = _longest_path(graph, durations)
+
+    chain = []
+    for pid in chain_ids:
+        ph   = id_to_phase.get(pid, {})
+        down = _count_downstream(pid, graph)
+        chain.append({
+            "phaseId":        pid,
+            "phaseName":      ph.get("name", pid),
+            "duration_weeks": round(durations.get(pid, 0.0), 1),
+            "blocks_count":   len(down),
+            "blocked_phases": [id_to_phase[d]["name"]
+                               for d in down if d in id_to_phase],
+        })
+
+    total = sum(durations.get(pid, 0.0) for pid in chain_ids)
+
+    return {
+        "chain":             chain,
+        "total_chain_weeks": round(total, 1),
+        "has_cycle":         has_cycle,
+    }

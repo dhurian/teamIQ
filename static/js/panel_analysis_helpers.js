@@ -28,7 +28,7 @@ function _priBadge(p) {
 }
 
 // ── SECTION: analysis section widgets (collapsible + reorderable) ─────────────
-let _aOrder = ['kpi','bottlenecks','recs','teams','charts','gap','interfaces','timeline'];
+let _aOrder = ['kpi','bottlenecks','chain','recs','teams','charts','gap','interfaces','timeline'];
 let _aCollapsed = {};
 
 function _aSection(id, icon, title, body, badge = '') {

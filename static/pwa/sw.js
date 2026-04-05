@@ -1,5 +1,5 @@
 /* TeamIQ Service Worker — network-first, offline fallback */
-const CACHE    = 'teamiq-v1';
+const CACHE    = 'teamiq-v2';
 const OFFLINE  = '/offline.html';
 
 /* Assets to pre-cache at install time */
@@ -48,7 +48,24 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  /* Everything else: cache-first (static assets, Chart.js CDN) */
+  /* Static JS/CSS — network-first so dev edits always load fresh.
+     CDN assets (Chart.js) fall back to cache for offline use.       */
+  const isCDN = url.hostname !== location.hostname;
+  if (!isCDN) {
+    // Local static assets: network-first, cache as fallback
+    event.respondWith(
+      fetch(request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE).then(cache => cache.put(request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  /* CDN assets (Chart.js etc): cache-first for offline resilience */
   event.respondWith(
     caches.match(request).then(cached => {
       if (cached) return cached;

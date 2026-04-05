@@ -21,12 +21,21 @@ def normalize_projects(projects):
         proj.setdefault("taskEdges", [])
         proj.setdefault("teams", [])
         proj.setdefault("connections", [])
-        proj.setdefault("businessCase", {})
+        bc = proj.setdefault("businessCase", {})
+        bc.setdefault("cost_k", 0)
+        bc.setdefault("benefit_yr_k", 0)
+        bc.setdefault("horizon_yrs", 5)
+        bc.setdefault("discount_rate", 0.08)
+        bc.setdefault("fte_rows", [])        # [{id,label,memberId,hourly_rate,hours_per_period,allocation_pct,periods,period_type}]
+        bc.setdefault("svc_rows", [])        # [{id,label,amount_per_period,period_type,periods}]
+        bc.setdefault("cost_period", "quarterly")
         proj.setdefault("startDate", None)
 
         for team in proj.get("teams", []):
             for member in team.get("members", []):
                 member.setdefault("allocation", 100)
+                member.setdefault("alloc_mode", "bulk")        # "bulk" | "scheduled"
+                member.setdefault("alloc_schedule", [])        # [{period_type,year,period,pct}]
 
         for ph in all_phases_flat(proj.get("phases", [])):
             ph.setdefault("children", [])

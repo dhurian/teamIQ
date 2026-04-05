@@ -36,7 +36,7 @@ async function renderOverview(){
         <div><div style="font-size:15px;font-weight:700;">${p.name}</div>
           <div style="font-size:11px;color:var(--faint);margin-top:3px;">${allM.length} people · ${p.teams.length} teams · ${tw}w</div></div>
         <div style="text-align:right;"><div style="font-size:24px;font-weight:700;font-family:var(--mono);color:${hc};">${pct}%</div>
-          <div style="font-size:10px;color:var(--faint);">success prob.</div></div>
+          <div class="label-xs">success prob.</div></div>
       </div>
       <div style="height:5px;background:var(--bg4);border-radius:3px;overflow:hidden;margin-bottom:12px;">
         <div style="height:100%;width:${pct}%;background:${hc};border-radius:3px;"></div></div>
@@ -44,9 +44,9 @@ async function renderOverview(){
         ${p.teams.map(t=>`<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${t.color}18;color:${t.color};font-weight:600;">${t.name}</span>`).join('')}
       </div>
       <div style="display:flex;gap:16px;">
-        <div><div style="font-size:10px;color:var(--faint);">Critical gaps</div><div style="font-size:13px;font-weight:700;color:${crit>0?'#e05050':'#1fb885'};">${crit}</div></div>
-        <div><div style="font-size:10px;color:var(--faint);">Interfaces</div><div style="font-size:13px;font-weight:700;">${p.connections.length}</div></div>
-        <div><div style="font-size:10px;color:var(--faint);">From org</div><div style="font-size:13px;font-weight:700;color:var(--teal);">${linked}</div></div>
+        <div><div class="label-xs">Critical gaps</div><div style="font-size:13px;font-weight:700;color:${crit>0?C.red:C.teal};">${crit}</div></div>
+        <div><div class="label-xs">Interfaces</div><div style="font-size:13px;font-weight:700;">${p.connections.length}</div></div>
+        <div><div class="label-xs">From org</div><div style="font-size:13px;font-weight:700;color:var(--teal);">${linked}</div></div>
       </div></div>`;
   }).join('');
   document.getElementById('overviewCards').innerHTML=cards;
@@ -65,8 +65,8 @@ async function renderOverview(){
       data:skArr.map(sk=>parseFloat(((simRes[p.id]?.team_exp?.[sk])||0).toFixed(2))),
       backgroundColor:p.color+'66',borderColor:p.color,borderWidth:1,borderRadius:3
     }))},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#8893a8',font:{size:11}}}},
-      scales:{x:{min:0,max:10,grid:{color:'#ffffff08'},ticks:{color:'#8893a8',font:{size:11}}},
-              y:{grid:{display:false},ticks:{color:'#8893a8',font:{size:11}}}}}});
+      plugins:{legend:{labels:{color:C.muted,font:{size:11}}}},
+      scales:{x:{min:0,max:10,grid:{color:'#ffffff08'},ticks:{color:C.muted,font:{size:11}}},
+              y:{grid:{display:false},ticks:{color:C.muted,font:{size:11}}}}}});
   }
 }

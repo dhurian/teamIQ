@@ -7,7 +7,7 @@ from models import new_phase, seed_org, default_skills
 from services import simulation_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _member(mid="m1"):
     return {"id": mid, "name": "Alice", "role": "Dev", "skills": default_skills()}
@@ -25,7 +25,7 @@ def _multi_proj():
     return [_proj("proj_1"), _proj("proj_2")]
 
 
-# ── simulate_project ──────────────────────────────────────────────────────────
+# ── SECTION: simulate_project ────────────────────────────────────────────────
 
 class TestSimulateProject:
     def test_returns_combined_and_teams(self):
@@ -96,7 +96,7 @@ class TestSimulateProject:
         assert "team_2" in result["teams"]
 
 
-# ── simulate_portfolio ────────────────────────────────────────────────────────
+# ── SECTION: simulate_portfolio ──────────────────────────────────────────────
 
 class TestSimulatePortfolio:
     def test_returns_dict_keyed_by_project_id(self):

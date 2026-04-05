@@ -4,6 +4,8 @@ test_api_org.py – integration tests for the global org hierarchy API.
 import pytest
 
 
+# ── SECTION: TestGetOrg ──────────────────────────────────────────────────────
+
 class TestGetOrg:
     def test_get_org_200(self, client):
         r = client.get("/api/org")
@@ -18,6 +20,8 @@ class TestGetOrg:
         org = client.get("/api/org").get_json()
         assert len(org["children"]) > 0
 
+
+# ── SECTION: TestAddOrgNode ──────────────────────────────────────────────────
 
 class TestAddOrgNode:
     def _root_id(self, client):
@@ -82,6 +86,8 @@ class TestAddOrgNode:
         assert node["id"].startswith("n_")
 
 
+# ── SECTION: TestUpdateOrgNode ───────────────────────────────────────────────
+
 class TestUpdateOrgNode:
     def _any_division_id(self, client):
         return client.get("/api/org").get_json()["children"][0]["id"]
@@ -131,6 +137,8 @@ class TestUpdateOrgNode:
         div = next(c for c in org["children"] if c["id"] == div_id)
         assert div["name"] == "Saved"
 
+
+# ── SECTION: TestDeleteOrgNode ───────────────────────────────────────────────
 
 class TestDeleteOrgNode:
     def test_delete_node_ok(self, client):

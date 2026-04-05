@@ -24,6 +24,10 @@ def normalize_projects(projects):
         proj.setdefault("businessCase", {})
         proj.setdefault("startDate", None)
 
+        for team in proj.get("teams", []):
+            for member in team.get("members", []):
+                member.setdefault("allocation", 100)
+
         for ph in all_phases_flat(proj.get("phases", [])):
             ph.setdefault("children", [])
             ph.setdefault("workPackages", [])

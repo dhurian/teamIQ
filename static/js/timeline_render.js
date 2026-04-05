@@ -225,7 +225,7 @@ function renderTimeline(){
   }
 
   const todayDay=Math.round((Date.now()-startMs)/86400000);
-  const todayMarker=(todayDay>=visibleStart&&todayDay<=visibleEnd)?`<line x1="${dx(todayDay)}" y1="0" x2="${dx(todayDay)}" y2="${svgH}" stroke="#e05050" stroke-width="1.5" opacity="0.8"/><polygon points="${dx(todayDay)-4},0 ${dx(todayDay)+4},0 ${dx(todayDay)},6" fill="#e05050" opacity="0.8"/>`:'';
+  const todayMarker=(todayDay>=visibleStart&&todayDay<=visibleEnd)?`<line x1="${dx(todayDay)}" y1="0" x2="${dx(todayDay)}" y2="${svgH}" stroke="${C.red}" stroke-width="1.5" opacity="0.8"/><polygon points="${dx(todayDay)-4},0 ${dx(todayDay)+4},0 ${dx(todayDay)},6" fill="${C.red}" opacity="0.8"/>`:'';
 
   const aBtnStyle=`background:none;border:none;cursor:pointer;padding:1px 4px;font-size:11px;line-height:1;border-radius:3px;`;
   let labelRows='', rowsSvg='';
@@ -283,8 +283,8 @@ function renderTimeline(){
       <span style="font-size:10px;color:var(--muted);width:12px;flex-shrink:0;" onclick="event.stopPropagation();${row.type!=='wp'?`toggleGanttRow('${row.ph.id}')`:''}">${toggle}</span>
       <div style="width:${row.type==='wp'?6:8}px;height:${row.type==='wp'?6:8}px;border-radius:${row.type==='wp'?'50%':'2px'};background:${mainColor};flex-shrink:0;"></div>
       <div style="min-width:0;flex:1;">
-        <div style="font-size:${row.type==='phase'?12:11}px;color:${row.type==='phase'?'var(--text)':'var(--muted)'};font-weight:${row.type==='phase'?700:500};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${taskLabel(row)}</div>
-        <div style="font-size:9px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${startTxt} → ${endTxt}</div>
+        <div class="trunc" style="font-size:${row.type==='phase'?12:11}px;color:${row.type==='phase'?'var(--text)':'var(--muted)'};font-weight:${row.type==='phase'?700:500};">${taskLabel(row)}</div>
+        <div class="trunc" style="font-size:9px;color:var(--faint);">${startTxt} → ${endTxt}</div>
       </div>
       <div class="gla" style="display:none;align-items:center;gap:1px;flex-shrink:0;">${moveHtml}${row.type!=='wp'?`<button onclick="event.stopPropagation();addSubphase('${proj.id}','${row.ph.id}')" title="Add subphase" style="${aBtnStyle}color:var(--teal)">⊕</button><button onclick="event.stopPropagation();addWP('${proj.id}','${row.ph.id}')" title="Add work package" style="${aBtnStyle}color:var(--muted)">📦</button><button onclick="event.stopPropagation();delPhase('${proj.id}','${row.ph.id}')" title="Delete" style="${aBtnStyle}color:var(--red)">✕</button>`:`<button onclick="event.stopPropagation();delWP('${proj.id}','${row.wp.id}')" title="Delete" style="${aBtnStyle}color:var(--red)">✕</button>`}</div>
     </div>`;
@@ -333,9 +333,9 @@ function renderTimeline(){
     <div onmousedown="startGanttResize(event)" style="height:6px;border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;background:var(--bg3);cursor:ns-resize;display:flex;align-items:center;justify-content:center;transition:background .12s;margin-bottom:10px;" onmouseenter="this.style.background='var(--bg4)'" onmouseleave="this.style.background='var(--bg3)'"><div style="width:40px;height:2px;border-radius:1px;background:var(--border2);pointer-events:none;"></div></div>
     <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
       <span style="font-size:10px;color:var(--faint);font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Legend</span>
-      <div style="display:flex;align-items:center;gap:5px;"><div style="width:10px;height:10px;border-radius:2px;background:#4a9eff;"></div><span style="font-size:11px;color:var(--muted);">Phase/Subphase</span></div>
-      ${Object.entries(WP_COLS).map(([s,c])=>`<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:${c};"></div><span style="font-size:11px;color:var(--muted);">WP: ${WP_LABELS[s]}</span></div>`).join('')}
-      <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:2px;background:#e05050;opacity:0.75;"></div><span style="font-size:11px;color:var(--muted);">Today</span></div>
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:10px;height:10px;border-radius:2px;background:${C.blue};"></div><span class="label-sm">Phase/Subphase</span></div>
+      ${Object.entries(WP_COLS).map(([s,c])=>`<div style="display:flex;align-items:center;gap:5px;"><div style="width:9px;height:9px;border-radius:50%;background:${c};"></div><span class="label-sm">WP: ${WP_LABELS[s]}</span></div>`).join('')}
+      <div style="display:flex;align-items:center;gap:5px;"><div style="width:18px;height:2px;background:${C.red};opacity:0.75;"></div><span class="label-sm">Today</span></div>
       <span style="font-size:11px;color:var(--faint);margin-left:auto;">Drag bar to move · drag edges to resize · click row label to inspect.</span>
     </div>
     ${inspectorHtml}`;

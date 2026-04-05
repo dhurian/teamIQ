@@ -32,33 +32,33 @@ static/js/timeline_scheduling.js   only if changing row structure
 
 ## ⑤ Analysis — bottleneck cards or severity logic
 ```
-services/analysis_service.py        detect_bottlenecks()
-static/js/panel_analysis.js         SECTION: bottleneck cards  (lines ~156–174)
+services/analysis_service.py             detect_bottlenecks()
+static/js/panel_analysis_cards.js        SECTION: bottleneck cards  (_buildBnCards)
 ```
 
 ## ⑥ Analysis — recommendation cards or priority logic
 ```
-services/analysis_service.py        generate_recommendations()
-static/js/panel_analysis.js         SECTION: recommendation cards  (lines ~176–188)
+services/analysis_service.py             generate_recommendations()
+static/js/panel_analysis_cards.js        SECTION: recommendation cards  (_buildRecCards)
 ```
 
 ## ⑦ Analysis — scenario compare
 ```
-blueprints/simulation.py            POST /api/scenarios/compare
-static/js/panel_analysis.js         SECTION: scenario compare  (lines ~325–403)
-services/project_service.py         SECTION: clone  (only for clone changes)
+blueprints/simulation.py                 POST /api/scenarios/compare
+static/js/panel_analysis_scenario.js     SECTION: run comparison  (runScenarioCompare)
+services/project_service.py              SECTION: clone  (only for clone changes)
 ```
 
 ## ⑧ Analysis — charts (skill coverage, phase probabilities, CI)
 ```
-static/js/panel_analysis.js         SECTION: charts  (lines ~242–322)
-models.py                            SECTION: Monte Carlo  (only if changing CI calc)
+static/js/panel_analysis_charts.js       SECTION: chart init  (_initAnalysisCharts)
+models.py                                SECTION: Monte Carlo  (only if changing CI calc)
 ```
 
 ## ⑨ Analysis — KPI metrics / gap calculations
 ```
-static/js/panel_analysis.js         SECTION: KPI + gap calcs  (lines ~61–73)
-services/analysis_service.py        only if changing bottleneck scoring
+static/js/panel_analysis.js              SECTION: KPI + gap calculations
+services/analysis_service.py             only if changing bottleneck scoring
 ```
 
 ## ⑩ Monte Carlo simulation
@@ -72,9 +72,12 @@ blueprints/simulation.py             route only if adding endpoint
 ```
 models.py                            new_phase() or new_work_package()
 services/project_service.py          SECTION: schema normalisation  (normalize_projects)
-blueprints/phases.py  OR  blueprints/work_packages.py   (PATCH allowed fields)
+blueprints/phases.py                 SECTION: top-level phases  OR  SECTION: subphases
+blueprints/work_packages.py          PATCH allowed fields
 static/js/phase_card.js              display in card
 static/js/timeline_render.js         SECTION: SVG row generation  (only if shown in gantt)
+tests/test_api_phases.py             SECTION: TestUpdatePhase  (if changing patch fields)
+tests/test_service_phases.py         SECTION: update_phase
 ```
 
 ## ⑫ Phase diagram (SVG canvas, node drag, edges, auto-layout)
@@ -91,55 +94,80 @@ static/js/phase_actions.js          selectPhase() — only if selection changes
 
 ## ⑭ Org hierarchy — map / tree / editor UI
 ```
-static/js/panel_org_hier_helpers.js   buildOrgMap, buildOrgDetail, buildOrgEditor
-static/js/panel_org_hier.js           renderOrgHier, computeLayout — only if layout changes
+static/js/panel_org_hier.js   buildOrgMap, buildOrgDetail, buildOrgEditor, renderOrgHier, computeLayout
 ```
 
 ## ⑮ Org hierarchy — node or skill data
 ```
-services/org_service.py             CRUD logic
-blueprints/org.py                   HTTP routes
-static/js/panel_org_hier_helpers.js SECTION: org editor  (orgSkillRow, buildOrgEditor)
+services/org_service.py        CRUD logic
+blueprints/org.py              HTTP routes
+static/js/panel_org_hier.js   SECTION: org-editor  (orgSkillRow, buildOrgEditor)
 ```
 
 ## ⑯ Team / member changes
 ```
-services/team_service.py            business logic
-blueprints/teams.py                 HTTP routes
+services/team_service.py            SECTION: teams  OR  SECTION: members
+blueprints/teams.py                 SECTION: teams  OR  SECTION: members  OR  SECTION: connections
 static/js/panel_teams.js            display
-static/js/api_actions.js            SECTION: teams + members  (dispatchers)
+static/js/api_actions.js            SECTION: teams + members
+tests/test_api_teams.py             SECTION: TestAddTeam … TestConnections
+tests/test_service_teams.py         SECTION: create_team … import_org_members
 ```
 
 ## ⑰ Project CRUD (create, update, delete, clone, import/export)
 ```
 services/project_service.py         full file (~168 lines)
 blueprints/projects.py              routes
-static/js/api_actions.js            SECTION: projects  (dispatchers)
+static/js/api_actions.js            SECTION: projects
+tests/test_api_projects.py          SECTION: TestAddProject … TestDeleteProject
+tests/test_service_projects.py      SECTION: create_project … delete_project
 ```
 
-## ⑱ New API endpoint (new blueprint)
+## ⑱ Org chart — SVG canvas, node drag, connect mode
+```
+static/js/panel_orgchart.js         SECTION: main render  (renderOrgChart)
+static/js/api_actions.js            SECTION: org chart — connect mode + node layout
+static/js/panel_orgchart.js         SECTION: svg-events  (initProjOrgEvents)  — drag/pan/zoom only
+static/js/panel_orgchart.js         SECTION: lightweight redraw  (_redrawOrgChart)  — drag perf only
+```
+
+## ⑲ Resource allocation — cross-project workload panel
+```
+services/resource_service.py        compute_allocation()  — deduplicate by orgId, sum per person
+blueprints/resources.py             SECTION: resource allocation  (GET /api/resources)
+static/js/panel_resources.js        SECTION: main render  (renderResources, _renderResourcesContent)
+static/js/panel_resources.js        SECTION: person row   (_resPersonRow)  — stacked bar + chips
+static/js/panel_resources.js        SECTION: filter toggle  (_resSetFilter)
+static/js/panel_teams.js            allocation slider in member editor  (alloc range 0–200)
+static/js/api_actions.js            SECTION: teams + members  (patchMemberAlloc — fire-and-forget)
+services/project_service.py         SECTION: schema normalisation  (member.setdefault allocation)
+services/team_service.py            SECTION: members  (create/update allocation field)
+app.py                              resources_bp registration
+```
+
+## ⑳ New API endpoint (new blueprint)
 ```
 app.py                              register blueprint
 blueprints/<name>.py                thin HTTP wrapper (create new)
 services/<name>_service.py          business logic (create new)
 ```
 
-## ⑲ Styling only
+## ㉑ Styling only
 ```
-static/css/app.css                  full file (~119 lines)
+static/css/app.css                  full file (~131 lines)
 ```
 
-## ⑳ Sidebar / navigation / tab routing
+## ㉒ Sidebar / navigation / tab routing
 ```
 static/js/sidebar.js                full file (~50 lines)
 ```
 
-## ㉑ Business case
+## ㉓ Business case
 ```
 static/js/panel_bizcase.js          full file (~91 lines)
 ```
 
-## ㉒ Requirements
+## ㉔ Requirements
 ```
 static/js/panel_reqs.js             full file (~57 lines)
 services/requirement_service.py     business logic
@@ -148,13 +176,14 @@ blueprints/requirements.py          routes
 
 ---
 
-## Dead files — DELETED (commit edd4554 → current)
+## Dead files — DELETED
 ```
-panel_timeline.js        443 lines  ┐
-panel_timeline_helpers.js 122 lines  │  all deleted — superseded by
-timeline_events.js        89 lines  │  timeline_render.js + timeline_scheduling.js
-timeline_layout.js       169 lines  │
-timeline_svg.js           72 lines  ┘  (895 lines total removed)
+panel_timeline.js         443 lines  ┐
+panel_timeline_helpers.js 122 lines  │  deleted — superseded by
+timeline_events.js         89 lines  │  timeline_render.js + timeline_scheduling.js
+timeline_layout.js        169 lines  │
+timeline_svg.js            72 lines  ┘  (895 lines total removed)
+panel_org_hier_helpers.js    1 line  — merged into panel_org_hier.js
 ```
 
 ---
@@ -164,11 +193,17 @@ timeline_svg.js           72 lines  ┘  (895 lines total removed)
 | File | Lines | Tokens | Sections |
 |---|---|---|---|
 | timeline_render.js | 346 | 5.8K | bar-drag·5 · gantt-height·156 · helper-actions·186 · main-render·198 |
-| panel_analysis.js | 403 | 6.3K | helpers·5 · render-entry·31 · KPI·61 · team-cards·75 · gap-table·95 · iface-risk·116 · phase-timeline·129 · bottleneck-cards·156 · rec-cards·176 · HTML-assembly·190 · charts·242 · scenario-compare·325 |
-| panel_org_hier_helpers.js | 213 | 3.7K | org-map · org-detail · org-tree · org-editor |
-| phase_diagram.js | 212 | 2.5K | SVG-nodes · edges · drag-pan · conn-mode · auto-layout |
-| services/team_service.py | 204 | 2.0K | team-CRUD · member-CRUD · org-import · connections |
-| models.py | 215 | 2.2K | skills·7 · uid·19 · duration·26 · phase-WP-schema·71 · org-types·72 · phase-tree·84 · Monte-Carlo·110 · org-tree·171 · seed-delegation·209 |
+| panel_org_hier.js | 259 | 4.2K | org-map·5 · org-detail·76 · org-tree·123 · org-editor·162 · layout+render·219 |
+| panel_orgchart.js | 198 | 3.2K | main-render·4 · conn-utils·94 · window-handlers·109 · svg-events·142 · redraw·177 |
+| panel_analysis_cards.js | ~130 | 2.0K | team-cards · gap-rows · conn-risks · phase-timeline · bn-cards · rec-cards |
+| panel_analysis_helpers.js | ~90 | 1.4K | pure-helpers · section-widgets (_aSection · _aToggleSection · _aMoveSection) |
+| panel_analysis_scenario.js | ~105 | 1.6K | drag-state · openScenarioCompare · _scToggleBody · runScenarioCompare · cloneProject |
+| panel_analysis.js | ~98 | 1.5K | render-entry · KPI · HTML-assembly |
+| panel_analysis_charts.js | ~82 | 1.3K | chart-init (_initAnalysisCharts) |
+| panel_resources.js | ~119 | 1.8K | filter-state · main-render · person-row · filter-toggle |
+| api_actions.js | 184 | 2.8K | core-dispatchers · projects · phases · work-packages · teams+members · org-chart · org-hierarchy |
+| services/team_service.py | 204 | 2.0K | teams·11 · members·55 · connections·160 · helpers·198 |
+| models.py | 216 | 2.2K | skills·7 · uid·19 · duration·26 · phase-WP-schema·71 · org-types·72 · phase-tree·84 · Monte-Carlo·110 · org-tree·171 · seed-delegation·209 |
 
 ## JS colour constants (utils.js — C object)
 Use `C.blue C.teal C.amber C.red C.purple C.muted C.faint` instead of hex literals.
@@ -183,6 +218,26 @@ Use in template strings instead of long inline styles:
 | `.label-sm` | `font-size:11px;color:var(--muted)` |
 | `.label-xs` | `font-size:10px;color:var(--faint)` |
 | `.fw7` | `font-weight:700` |
+
+---
+
+## Test fixtures (tests/conftest.py)
+All shared fixtures live in `conftest.py` — no per-file re-declarations needed.
+
+| Fixture | What it provides |
+|---|---|
+| `app` | Flask test app wired to a temp SQLite DB (session-scoped) |
+| `client` | Test client, resets DB to seed state before each test |
+| `proj_id` | Active project id from seed |
+| `proj` | Active project dict from seed |
+| `phase_id` | First top-level phase id |
+| `team_id` | First team id |
+| `state_data` | Callable → latest `/api/state` JSON |
+| `project_state` | Callable(project_id) → project dict from state |
+| `second_team_id` | Creates a second team, returns its id |
+| `member_id` | Creates a member in `team_id`, returns its id |
+| `wp_id` | Creates a work package in `phase_id`, returns its id |
+| `conn_id` | Creates a connection between `team_id` and `second_team_id`, returns its id |
 
 ---
 

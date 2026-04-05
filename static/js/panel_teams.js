@@ -34,8 +34,13 @@ function renderTeams(){
   if(rawMember){
     const isLinked=!!rawMember.orgId;
     const nm=resolveName(rawMember),rl=resolveRole(rawMember),sk=resolveSkills(rawMember);
+    const alloc=rawMember.allocation??100;
+    const allocCol=alloc>100?C.red:alloc>=80?C.amber:C.teal;
+    const allocBadge=alloc>100?'b-high':alloc>=80?'b-med':'b-ok';
+    const allocLabel=alloc>100?'OVER':alloc>=80?'FULL':'OK';
+    const allocHint=alloc>100?'⚠ Overallocated — check Resources panel':alloc>=80?'Near capacity':'Has available capacity';
     editor=`<div class="card">
-      <div class="flex-between" style="margin-bottom:1.25rem;">
+      <div class="flex-between" style="margin-bottom:1rem;">
         <div class="flex-ac">
           <div class="avatar" style="width:44px;height:44px;font-size:15px;background:${team.color}22;color:${team.color};">${ini(nm)}</div>
           <div>${isLinked?`<div style="font-size:15px;font-weight:700;">${nm}</div><div style="font-size:12px;color:var(--muted);">${rl}</div>
@@ -48,6 +53,19 @@ function renderTeams(){
           ${isLinked?`<button class="btn btn-sm" onclick="unlinkMember('${proj.id}','${rawMember.id}')">Unlink</button>`:''}
           <button class="btn btn-danger btn-sm" onclick="delMember('${proj.id}','${rawMember.id}')">Remove</button>
         </div>
+      </div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:1rem;">
+        <div class="flex-between" style="margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Project Allocation</span>
+          <span class="badge ${allocBadge}">${allocLabel}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="range" min="0" max="200" step="5" value="${alloc}" id="allocSlider_${rawMember.id}"
+            oninput="document.getElementById('allocVal_${rawMember.id}').textContent=this.value+'%';document.getElementById('allocVal_${rawMember.id}').style.color=${JSON.stringify(allocCol)};patchMemberAlloc('${proj.id}','${rawMember.id}',this.value)"
+            style="flex:1;">
+          <span id="allocVal_${rawMember.id}" style="font-size:16px;font-weight:700;font-family:var(--mono);color:${allocCol};min-width:44px;text-align:right;">${alloc}%</span>
+        </div>
+        <div style="font-size:11px;color:var(--faint);margin-top:5px;">${allocHint}</div>
       </div>
       ${isLinked?`<h3>Skills (read-only — edit in Organization)</h3>${ALL_SKILLS.map(sk2=>{const mn=sk[sk2]?.m||0;return`<div style="display:grid;grid-template-columns:120px 1fr 44px;align-items:center;gap:10px;margin-bottom:7px;"><div class="skill-label">${sk2}</div><div style="height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${mn*10}%;background:${scv(mn)};border-radius:2px;"></div></div><div class="skill-val" style="color:${scv(mn)};">${mn.toFixed(1)}</div></div>`;}).join('')}`
       :`<h3>Technical skills</h3>${TECH_SKILLS.map(sk2=>memberSkillRow(rawMember,sk2,proj.id)).join('')}<div class="sep"></div><h3>Personality &amp; work style</h3>${PERS_SKILLS.map(sk2=>memberSkillRow(rawMember,sk2,proj.id)).join('')}`}

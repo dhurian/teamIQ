@@ -30,7 +30,7 @@ function buildPhaseInspector(proj, ph){
       <div><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Manual end override</div><input type="date" value="${ph.endDateOverride||''}" onchange="patchPhase('${pid}','${ph.id}',{endDateOverride:this.value||null})" style="width:100%;"></div>
     </div>
     <div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:10px;">
-      <div style="font-size:10px;color:var(--faint);">Duration</div>
+      <div class="label-xs">Duration</div>
       <div class="flex-ac">
         <input type="number" min="0.1" step="0.5" value="${ph.value??ph.weeks??2}" onchange="patchPhase('${pid}','${ph.id}',{value:parseFloat(this.value)})" style="width:72px;">
         <select onchange="patchPhase('${pid}','${ph.id}',{unit:this.value})">${DURATION_UNITS.map(u=>`<option value="${u}" ${(ph.unit||'weeks')===u?'selected':''}>${u}</option>`).join('')}</select>
@@ -45,7 +45,7 @@ function buildPhaseInspector(proj, ph){
       </div>
     </div>
     <div style="font-size:11px;color:var(--faint);margin-bottom:6px;">Toggle required skills</div>
-    <div>${ALL_SKILLS.map(sk=>{ const on=ph.required?.[sk]!==undefined; const col='#4a9eff'; return `<button class="skill-toggle ${on?'on':''}" style="${on?`color:${col};border-color:${col};background:${col}18;`:''}" onclick="togglePhaseSkill('${pid}','${ph.id}','${sk}')">${sk}</button>`; }).join('')}</div>
+    <div>${ALL_SKILLS.map(sk=>{ const on=ph.required?.[sk]!==undefined; const col=C.blue; return `<button class="skill-toggle ${on?'on':''}" style="${on?`color:${col};border-color:${col};background:${col}18;`:''}" onclick="togglePhaseSkill('${pid}','${ph.id}','${sk}')">${sk}</button>`; }).join('')}</div>
     ${Object.keys(ph.required||{}).length ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin-top:10px;">${Object.entries(ph.required||{}).map(([sk,lv])=>`<div class="flex-ac"><span style="font-size:11px;color:var(--muted);width:94px;flex-shrink:0;">${sk}</span><input type="range" min="1" max="10" step="0.5" value="${lv}" oninput="updatePhaseReq('${pid}','${ph.id}','${sk}',this.value);this.nextElementSibling.textContent=parseFloat(this.value).toFixed(1)" style="flex:1;"><span style="font-size:12px;font-weight:700;min-width:24px;font-family:var(--mono);">${parseFloat(lv).toFixed(1)}</span></div>`).join('')}</div>` : `<div style="font-size:11px;color:var(--faint);margin-top:8px;">No requirements</div>`}
   `;
 }
@@ -64,7 +64,7 @@ function buildWpInspector(proj, wp){
       <div><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Manual end override</div><input type="date" value="${wp.endDateOverride||''}" onchange="patchWP('${pid}','${wp.id}',{endDateOverride:this.value||null})" style="width:100%;"></div>
     </div>
     <div style="display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin-bottom:10px;">
-      <div style="font-size:10px;color:var(--faint);">Duration</div>
+      <div class="label-xs">Duration</div>
       <div class="flex-ac"><input type="number" min="0.1" step="0.5" value="${wp.value??1}" onchange="patchWP('${pid}','${wp.id}',{value:parseFloat(this.value)})" style="width:72px;"><select onchange="patchWP('${pid}','${wp.id}',{unit:this.value})">${DURATION_UNITS.map(u=>`<option value="${u}" ${(wp.unit||'weeks')===u?'selected':''}>${u}</option>`).join('')}</select></div>
     </div>
     <div style="margin-bottom:10px;"><div style="font-size:10px;color:var(--faint);margin-bottom:4px;">Status</div><select onchange="patchWP('${pid}','${wp.id}',{status:this.value})" style="width:100%;">${WP_STATUSES.map(s=>`<option value="${s}" ${wp.status===s?'selected':''}>${WP_LABELS[s]||s}</option>`).join('')}</select></div>

@@ -3,15 +3,9 @@ test_api_workpackages.py – integration tests for work package API endpoints.
 """
 import pytest
 
+# Fixtures: wp_id  →  defined in conftest.py
 
-@pytest.fixture()
-def wp_id(client, proj_id, phase_id):
-    """Create a fresh work package and return its id."""
-    r = client.post(f"/api/projects/{proj_id}/phases/{phase_id}/work-packages",
-                    json={"name": "Test WP"})
-    assert r.status_code == 200
-    return r.get_json()["workPackage"]["id"]
-
+# ── SECTION: TestAddWorkPackage ──────────────────────────────────────────────
 
 class TestAddWorkPackage:
     def test_add_wp_ok(self, client, proj_id, phase_id):
@@ -55,6 +49,8 @@ class TestAddWorkPackage:
         phase = next(p for p in proj["phases"] if p["id"] == phase_id)
         assert any(w["id"] == wp_id for w in phase.get("workPackages", []))
 
+
+# ── SECTION: TestUpdateWorkPackage ───────────────────────────────────────────
 
 class TestUpdateWorkPackage:
     def test_patch_name(self, client, proj_id, wp_id):
@@ -110,6 +106,8 @@ class TestUpdateWorkPackage:
         assert r.status_code == 404
 
 
+# ── SECTION: TestDeleteWorkPackage ───────────────────────────────────────────
+
 class TestDeleteWorkPackage:
     def test_delete_wp_ok(self, client, proj_id, wp_id):
         r = client.delete(f"/api/projects/{proj_id}/work-packages/{wp_id}")
@@ -140,6 +138,8 @@ class TestDeleteWorkPackage:
         r = client.delete(f"/api/projects/{proj_id}/work-packages/{wp_id}")
         assert r.status_code == 200
 
+
+# ── SECTION: TestMoveWorkPackage ─────────────────────────────────────────────
 
 class TestMoveWorkPackage:
     def test_move_wp_down(self, client, proj_id, phase_id):

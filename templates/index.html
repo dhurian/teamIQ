@@ -28,6 +28,7 @@
         <div class="nav-group-label">Global</div>
         <div class="nav-item" onclick="setTab('overview')"><span class="nav-icon">🏠</span>Overview</div>
         <div class="nav-item" onclick="setTab('orghier')"><span class="nav-icon">🏢</span>Organization</div>
+        <div class="nav-item" onclick="setTab('resources')"><span class="nav-icon">⚡</span>Resources</div>
         <div class="nav-group-label" id="projTabsLabel" style="margin-top:6px;">Current Project</div>
         <div class="nav-item" onclick="setTab('teams')"><span class="nav-icon">👥</span>Teams</div>
         <div class="nav-item" onclick="setTab('phases')"><span class="nav-icon">📋</span>Phases</div>
@@ -48,7 +49,8 @@
     <div id="panelOrgchart"  class="panel"></div>
     <div id="panelBizcase"   class="panel"></div>
     <div id="panelReqs"      class="panel"></div>
-    <div id="panelAnalysis"  class="panel"></div>
+    <div id="panelAnalysis"   class="panel"></div>
+    <div id="panelResources"  class="panel"></div>
   </main>
 </div>
 <div id="importOverlay" style="display:none;"></div>
@@ -73,7 +75,6 @@ const NODE_W = 175, NODE_H = 92;
 <script src="/static/js/utils.js"></script>
 <script src="/static/js/sidebar.js"></script>
 <script src="/static/js/panel_overview.js"></script>
-<script src="/static/js/panel_org_hier_helpers.js"></script>
 <script src="/static/js/panel_org_hier.js"></script>
 <script src="/static/js/panel_teams.js"></script>
 <script src="/static/js/panel_phases_helpers.js"></script>
@@ -88,18 +89,23 @@ const NODE_W = 175, NODE_H = 92;
 <script src="/static/js/panel_orgchart.js"></script>
 <script src="/static/js/panel_bizcase.js"></script>
 <script src="/static/js/panel_reqs.js"></script>
+<script src="/static/js/panel_analysis_helpers.js"></script>
+<script src="/static/js/panel_analysis_cards.js"></script>
+<script src="/static/js/panel_analysis_charts.js"></script>
+<script src="/static/js/panel_analysis_scenario.js"></script>
 <script src="/static/js/panel_analysis.js"></script>
+<script src="/static/js/panel_resources.js"></script>
 <script src="/static/js/import_picker.js"></script>
 <script src="/static/js/api_actions.js"></script>
 <script src="/static/js/import_export.js"></script>
 <script src="/static/js/boot.js"></script>
 <!-- PWA: install prompt banner -->
-<div id="installBanner" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;background:#1e2535;border:1px solid #2e3a50;border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:320px;">
+<div id="installBanner" style="display:none;position:fixed;bottom:1.5rem;right:1.5rem;z-index:200;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;box-shadow:0 8px 32px rgba(0,0,0,.5);max-width:320px;">
   <div style="font-size:13px;font-weight:700;margin-bottom:4px;">Install TeamIQ</div>
-  <div style="font-size:12px;color:#8893a8;margin-bottom:12px;">Add to your desktop for quick access — works like a native app.</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Add to your desktop for quick access — works like a native app.</div>
   <div style="display:flex;gap:8px;">
-    <button id="installBtn" style="flex:1;background:#0d7a57;border:1px solid #1fb885;color:#fff;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Install</button>
-    <button onclick="document.getElementById('installBanner').style.display='none'" style="background:transparent;border:1px solid #2e3a50;color:#8893a8;padding:7px 12px;border-radius:6px;font-size:12px;cursor:pointer;">Later</button>
+    <button id="installBtn" class="btn btn-primary" style="flex:1;padding:7px;font-size:12px;font-weight:600;">Install</button>
+    <button onclick="document.getElementById('installBanner').style.display='none'" class="btn" style="padding:7px 12px;font-size:12px;">Later</button>
   </div>
 </div>
 

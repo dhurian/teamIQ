@@ -4,6 +4,8 @@ test_api_phases.py – integration tests for phases, subphases, and phase edges.
 import pytest
 
 
+# ── SECTION: TestAddPhase ────────────────────────────────────────────────────
+
 class TestAddPhase:
     def test_add_phase_ok(self, client, proj_id):
         r = client.post(f"/api/projects/{proj_id}/phases",
@@ -38,6 +40,8 @@ class TestAddPhase:
         r = client.post("/api/projects/ghost/phases", json={"name": "X"})
         assert r.status_code == 404
 
+
+# ── SECTION: TestUpdatePhase ─────────────────────────────────────────────────
 
 class TestUpdatePhase:
     def test_patch_name(self, client, proj_id, phase_id):
@@ -89,6 +93,8 @@ class TestUpdatePhase:
         assert r.get_json()["phase"]["value"] == 5.0
 
 
+# ── SECTION: TestDeletePhase ─────────────────────────────────────────────────
+
 class TestDeletePhase:
     def test_delete_top_level_phase(self, client, proj_id):
         # Add a phase then delete it
@@ -122,6 +128,8 @@ class TestDeletePhase:
         r = client.delete(f"/api/projects/{proj_id}/phases/ghost_ph")
         assert r.status_code == 404
 
+
+# ── SECTION: TestSubphases ───────────────────────────────────────────────────
 
 class TestSubphases:
     def test_add_subphase_ok(self, client, proj_id, phase_id):
@@ -175,6 +183,8 @@ class TestSubphases:
         assert r.status_code == 404  # err("Parent phase not found", 404)
 
 
+# ── SECTION: TestMovePhase ───────────────────────────────────────────────────
+
 class TestMovePhase:
     def test_move_phase_down(self, client, proj_id):
         state = client.get("/api/state").get_json()
@@ -204,6 +214,8 @@ class TestMovePhase:
         new_phases = r.get_json()["phases"]
         assert new_phases[-2]["id"] == last_id
 
+
+# ── SECTION: TestPhaseEdges ──────────────────────────────────────────────────
 
 class TestPhaseEdges:
     def test_add_edge_ok(self, client, proj_id, phase_id):

@@ -17,6 +17,7 @@ from blueprints.teams         import bp as teams_bp
 from blueprints.org           import bp as org_bp
 from blueprints.simulation    import bp as simulation_bp
 from blueprints.requirements  import bp as requirements_bp
+from blueprints.resources     import bp as resources_bp
 
 
 def create_app() -> Flask:
@@ -31,6 +32,7 @@ def create_app() -> Flask:
     application.register_blueprint(org_bp)
     application.register_blueprint(simulation_bp)
     application.register_blueprint(requirements_bp)
+    application.register_blueprint(resources_bp)
 
     # ── Error handlers ─────────────────────────────────────────────────────────
     @application.errorhandler(404)

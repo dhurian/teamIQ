@@ -27,10 +27,10 @@ function renderSidebar(){
 // ── Tab routing ────────────────────────────────────────────────────────────
 function setTab(tab){
   activeTab = tab;
-  const labels = {overview:'Overview',orghier:'Organization',teams:'Teams',phases:'Phases',timeline:'Timeline',orgchart:'Org Chart',bizcase:'Business Case',reqs:'Requirements',analysis:'Analysis'};
+  const labels = {overview:'Overview',orghier:'Organization',resources:'Resources',teams:'Teams',phases:'Phases',timeline:'Timeline',orgchart:'Org Chart',bizcase:'Business Case',reqs:'Requirements',analysis:'Analysis'};
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.textContent.trim()===labels[tab]));
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  const pm = {overview:'panelOverview',orghier:'panelOrgHier',teams:'panelTeams',phases:'panelPhases',timeline:'panelTimeline',orgchart:'panelOrgchart',bizcase:'panelBizcase',reqs:'panelReqs',analysis:'panelAnalysis'};
+  const pm = {overview:'panelOverview',orghier:'panelOrgHier',resources:'panelResources',teams:'panelTeams',phases:'panelPhases',timeline:'panelTimeline',orgchart:'panelOrgchart',bizcase:'panelBizcase',reqs:'panelReqs',analysis:'panelAnalysis'};
   document.getElementById(pm[tab])?.classList.add('active');
   rerender(tab);
 }
@@ -45,5 +45,6 @@ function rerender(tab){
   else if(t==='orgchart') renderOrgChart();
   else if(t==='bizcase')  renderBizCase();
   else if(t==='reqs')     renderReqs();
-  else if(t==='analysis') renderAnalysis();
+  else if(t==='analysis')   renderAnalysis();
+  else if(t==='resources')  renderResources();
 }

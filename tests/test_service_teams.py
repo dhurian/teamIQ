@@ -7,7 +7,7 @@ from models import new_phase, seed_org, default_skills
 from services import team_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _proj():
     return {
@@ -25,7 +25,7 @@ def _proj():
     }
 
 
-# ── create_team ───────────────────────────────────────────────────────────────
+# ── SECTION: create_team ─────────────────────────────────────────────────────
 
 class TestCreateTeam:
     def test_appends_team(self):
@@ -46,7 +46,7 @@ class TestCreateTeam:
         assert t["members"] == []
 
 
-# ── update_team ───────────────────────────────────────────────────────────────
+# ── SECTION: update_team ─────────────────────────────────────────────────────
 
 class TestUpdateTeam:
     def test_updates_fields(self):
@@ -61,7 +61,7 @@ class TestUpdateTeam:
             team_service.update_team(proj, "team_x", {})
 
 
-# ── delete_team ───────────────────────────────────────────────────────────────
+# ── SECTION: delete_team ─────────────────────────────────────────────────────
 
 class TestDeleteTeam:
     def test_removes_team(self):
@@ -97,7 +97,7 @@ class TestDeleteTeam:
             team_service.delete_team(proj, "team_x")
 
 
-# ── create_member ─────────────────────────────────────────────────────────────
+# ── SECTION: create_member ───────────────────────────────────────────────────
 
 class TestCreateMember:
     def test_adds_standalone_member(self):
@@ -124,7 +124,7 @@ class TestCreateMember:
             team_service.create_member(proj, "team_x", {})
 
 
-# ── update_member ─────────────────────────────────────────────────────────────
+# ── SECTION: update_member ───────────────────────────────────────────────────
 
 class TestUpdateMember:
     def test_updates_name_and_role(self):
@@ -146,7 +146,7 @@ class TestUpdateMember:
             team_service.update_member(proj, "m_missing", {})
 
 
-# ── delete_member ─────────────────────────────────────────────────────────────
+# ── SECTION: delete_member ───────────────────────────────────────────────────
 
 class TestDeleteMember:
     def test_removes_member(self):
@@ -168,7 +168,7 @@ class TestDeleteMember:
             team_service.delete_member(proj, "m_missing")
 
 
-# ── move_member ───────────────────────────────────────────────────────────────
+# ── SECTION: move_member ─────────────────────────────────────────────────────
 
 class TestMoveMember:
     def test_moves_to_other_team(self):
@@ -196,7 +196,7 @@ class TestMoveMember:
             team_service.move_member(proj, m["id"], "team_x")
 
 
-# ── unlink_member ─────────────────────────────────────────────────────────────
+# ── SECTION: unlink_member ───────────────────────────────────────────────────
 
 class TestUnlinkMember:
     def test_copies_from_org(self):
@@ -221,7 +221,7 @@ class TestUnlinkMember:
             team_service.unlink_member(proj, m["id"], seed_org())
 
 
-# ── import_org_members ────────────────────────────────────────────────────────
+# ── SECTION: import_org_members ──────────────────────────────────────────────
 
 class TestImportOrgMembers:
     def test_imports_known_ids(self):
@@ -251,7 +251,7 @@ class TestImportOrgMembers:
             team_service.import_org_members(proj, "team_x", ["p1"], seed_org())
 
 
-# ── add_connection ────────────────────────────────────────────────────────────
+# ── SECTION: add_connection ──────────────────────────────────────────────────
 
 class TestAddConnection:
     def test_adds_connection(self):
@@ -272,7 +272,7 @@ class TestAddConnection:
             team_service.add_connection(proj, {"from": "team_1", "to": "team_1"})
 
 
-# ── update_connection ─────────────────────────────────────────────────────────
+# ── SECTION: update_connection ───────────────────────────────────────────────
 
 class TestUpdateConnection:
     def test_updates_label_and_type(self):
@@ -288,7 +288,7 @@ class TestUpdateConnection:
             team_service.update_connection(proj, "c_missing", {})
 
 
-# ── delete_connection ─────────────────────────────────────────────────────────
+# ── SECTION: delete_connection ───────────────────────────────────────────────
 
 class TestDeleteConnection:
     def test_removes_connection(self):

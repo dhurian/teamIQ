@@ -7,7 +7,7 @@ from models import new_phase, uid
 from services import phase_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _proj():
     ph = new_phase("Phase 1", 2, "weeks", 60, 60)
@@ -18,7 +18,7 @@ def _proj():
     }
 
 
-# ── create_phase ──────────────────────────────────────────────────────────────
+# ── SECTION: create_phase ────────────────────────────────────────────────────
 
 class TestCreatePhase:
     def test_appends_to_phases(self):
@@ -58,7 +58,7 @@ class TestCreatePhase:
         assert proj["phaseEdges"] == []
 
 
-# ── update_phase ──────────────────────────────────────────────────────────────
+# ── SECTION: update_phase ────────────────────────────────────────────────────
 
 class TestUpdatePhase:
     def test_updates_name(self):
@@ -95,7 +95,7 @@ class TestUpdatePhase:
         assert proj["phases"][0]["endDateOverride"]   == "2025-03-01"
 
 
-# ── delete_phase ──────────────────────────────────────────────────────────────
+# ── SECTION: delete_phase ────────────────────────────────────────────────────
 
 class TestDeletePhase:
     def test_removes_phase(self):
@@ -118,7 +118,7 @@ class TestDeletePhase:
             phase_service.delete_phase(proj, "ph_missing")
 
 
-# ── move_phase ────────────────────────────────────────────────────────────────
+# ── SECTION: move_phase ──────────────────────────────────────────────────────
 
 class TestMovePhase:
     def test_swaps_down(self):
@@ -141,7 +141,7 @@ class TestMovePhase:
             phase_service.move_phase(proj, "ph_missing", 1)
 
 
-# ── create_subphase ───────────────────────────────────────────────────────────
+# ── SECTION: create_subphase ─────────────────────────────────────────────────
 
 class TestCreateSubphase:
     def test_adds_child(self):
@@ -164,7 +164,7 @@ class TestCreateSubphase:
             phase_service.create_subphase(proj, "ph_missing", {})
 
 
-# ── add_phase_edge ────────────────────────────────────────────────────────────
+# ── SECTION: add_phase_edge ──────────────────────────────────────────────────
 
 class TestAddPhaseEdge:
     def test_adds_edge(self):
@@ -199,7 +199,7 @@ class TestAddPhaseEdge:
             phase_service.add_phase_edge(proj, "ph_x", None)
 
 
-# ── delete_phase_edge ─────────────────────────────────────────────────────────
+# ── SECTION: delete_phase_edge ───────────────────────────────────────────────
 
 class TestDeletePhaseEdge:
     def test_removes_edge(self):

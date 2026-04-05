@@ -10,7 +10,7 @@ from models import (
 )
 
 
-# ── uid ───────────────────────────────────────────────────────────────────────
+# ── SECTION: TestUid ─────────────────────────────────────────────────────────
 
 class TestUid:
     def test_returns_string(self):
@@ -24,7 +24,7 @@ class TestUid:
         assert len(ids) == 200
 
 
-# ── to_weeks / phase_weeks ────────────────────────────────────────────────────
+# ── SECTION: TestDurationHelpers ─────────────────────────────────────────────
 
 class TestDurationHelpers:
     def test_days_to_weeks(self):
@@ -51,7 +51,7 @@ class TestDurationHelpers:
         assert phase_weeks(ph) == pytest.approx(3.0)
 
 
-# ── new_phase ─────────────────────────────────────────────────────────────────
+# ── SECTION: TestNewPhase ────────────────────────────────────────────────────
 
 class TestNewPhase:
     def test_has_required_keys(self):
@@ -87,7 +87,7 @@ class TestNewPhase:
         assert ph["required"]["Frontend"] == 7
 
 
-# ── new_work_package ──────────────────────────────────────────────────────────
+# ── SECTION: TestNewWorkPackage ──────────────────────────────────────────────
 
 class TestNewWorkPackage:
     def test_has_required_keys(self):
@@ -110,7 +110,7 @@ class TestNewWorkPackage:
         assert wp["name"] == "My WP"
 
 
-# ── find_phase / all_phases_flat ──────────────────────────────────────────────
+# ── SECTION: TestPhaseTree ───────────────────────────────────────────────────
 
 class TestPhaseTree:
     def _tree(self):
@@ -161,7 +161,7 @@ class TestPhaseTree:
         assert parent_i < child_i
 
 
-# ── remove_phase_edges ────────────────────────────────────────────────────────
+# ── SECTION: TestRemovePhaseEdges ────────────────────────────────────────────
 
 class TestRemovePhaseEdges:
     def _proj_with_edges(self):
@@ -209,7 +209,7 @@ class TestRemovePhaseEdges:
         assert len(proj["phaseEdges"]) == before
 
 
-# ── Org tree helpers ──────────────────────────────────────────────────────────
+# ── SECTION: TestOrgHelpers ──────────────────────────────────────────────────
 
 class TestOrgHelpers:
     def _org(self):
@@ -259,7 +259,7 @@ class TestOrgHelpers:
         assert deleted is False
 
 
-# ── Monte Carlo ───────────────────────────────────────────────────────────────
+# ── SECTION: TestMonteCarlo ──────────────────────────────────────────────────
 
 class TestMonteCarlo:
     def _members_meeting_frontend(self):

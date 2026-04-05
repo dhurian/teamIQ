@@ -2,10 +2,9 @@
 // ACTION DISPATCHERS  (call API → reload state → re-render)
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Chart destroy helper ─────────────────────────────────────────────────────
+// ── SECTION: core dispatchers (act, actPhases, dc) ───────────────────────────
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 
-// ── Core dispatchers ─────────────────────────────────────────────────────────
 async function act(fn){
   try {
     const result = await fn();
@@ -31,7 +30,7 @@ async function actPhases(fn){
   } catch(e){ console.error('actPhases() error:', e); }
 }
 
-// ── Projects ──────────────────────────────────────────────────────────────────
+// ── SECTION: projects ─────────────────────────────────────────────────────────
 const switchProject = async pid => {
   await POST('/api/active-project',{projectId:pid});
   await loadState(); rerender();
@@ -40,7 +39,7 @@ const addProject    = ()=>act(()=>POST('/api/projects',{}));
 const delProject    = pid=>act(()=>DELETE(`/api/projects/${pid}`));
 const patchProject  = (pid,d)=>act(()=>PATCH(`/api/projects/${pid}`,d));
 
-// ── Phases ────────────────────────────────────────────────────────────────────
+// ── SECTION: phases ───────────────────────────────────────────────────────────
 const addPhase = pid=>actPhases(()=>{
   const proj=S.projects?.find(p=>p.id===pid);
   const flat=proj?.phases||[];
@@ -69,7 +68,7 @@ const togglePhaseExpanded = (pid,phid)=>{
   actPhases(()=>PATCH(`/api/projects/${pid}/phases/${phid}`,{expanded:ph.expanded}));
 };
 
-// ── Work packages ─────────────────────────────────────────────────────────────
+// ── SECTION: work packages ────────────────────────────────────────────────────
 const addWP   = (pid,phid)=>actPhases(()=>POST(`/api/projects/${pid}/phases/${phid}/work-packages`,{}));
 const patchWP = (pid,wpid,d)=>actPhases(()=>PATCH(`/api/projects/${pid}/work-packages/${wpid}`,d));
 const delWP   = (pid,wpid)=>actPhases(()=>DELETE(`/api/projects/${pid}/work-packages/${wpid}`));
@@ -90,7 +89,7 @@ const updatePhaseReq=(pid,phid,sk,val)=>{
   PATCH(`/api/projects/${pid}/phases/${phid}`,{required:ph.required});
 };
 
-// ── Teams ─────────────────────────────────────────────────────────────────────
+// ── SECTION: teams + members ──────────────────────────────────────────────────
 const addTeam      = pid=>act(()=>POST(`/api/projects/${pid}/teams`,{}));
 const delTeam      = (pid,tid)=>act(()=>DELETE(`/api/projects/${pid}/teams/${tid}`));
 const patchTeam    = (pid,tid,d)=>act(()=>PATCH(`/api/projects/${pid}/teams/${tid}`,d));
@@ -107,7 +106,12 @@ const patchMemberSkill=(pid,mid,sk,type,val)=>{
   PATCH(`/api/projects/${pid}/members/${mid}`,{skill:{name:sk,type,value:parseFloat(val)}});
 };
 
-// ── Team connections ──────────────────────────────────────────────────────────
+// Fire-and-forget — no re-render (keeps slider smooth)
+const patchMemberAlloc=(pid,mid,val)=>{
+  PATCH(`/api/projects/${pid}/members/${mid}`,{allocation:parseInt(val)});
+};
+
+// ── SECTION: org chart — connect mode + node layout ──────────────────────────
 const addConnection   = (pid,d)=>act(()=>POST(`/api/projects/${pid}/connections`,d));
 const delConnection   = (pid,cid)=>act(()=>DELETE(`/api/projects/${pid}/connections/${cid}`));
 
@@ -119,7 +123,6 @@ const addConnectionForm=pid=>{
   addConnection(pid,{from,to,type,label});
 };
 
-// ── Org chart: multi-connect mode ─────────────────────────────────────────────
 const toggleProjConnMode=async pid=>{
   const proj=ap();if(!proj)return;
   const mode=proj.orgMode==='connecting'?'none':'connecting';
@@ -140,7 +143,6 @@ const projNodeClick=async(pid,tid)=>{
   const proj=ap();if(!proj||proj.orgMode!=='connecting')return;
   if(!orgConnFrom){orgConnFrom=tid;renderOrgChart();return;}
   if(orgConnFrom===tid){orgConnFrom=null;renderOrgChart();return;}
-  // Create connection — stay in connect mode, just reset source
   const label=prompt('Connection label (optional):','')||'';
   const typeIn=prompt('Type: integration | dependency | handoff | reporting','integration')||'integration';
   const valid=['integration','dependency','handoff','reporting'];
@@ -159,7 +161,7 @@ const autoLayoutTeams=async pid=>{
   await loadState();renderOrgChart();
 };
 
-// ── Org hierarchy actions ─────────────────────────────────────────────────────
+// ── SECTION: org hierarchy actions ───────────────────────────────────────────
 const addOrgChild   = async pid=>{
   await POST(`/api/org/nodes`,{parentId:pid});
   await loadState();renderOrgHier();

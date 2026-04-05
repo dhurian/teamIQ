@@ -4,6 +4,8 @@ test_api_simulation.py – integration tests for the simulation API endpoints.
 import pytest
 
 
+# ── SECTION: TestProjectSimulation ───────────────────────────────────────────
+
 class TestProjectSimulation:
     def test_simulate_200(self, client, proj_id):
         r = client.post("/api/simulate",
@@ -70,6 +72,8 @@ class TestProjectSimulation:
         result_ids = set(data["teams"].keys())
         assert result_ids == team_ids
 
+
+# ── SECTION: TestPortfolioSimulation ─────────────────────────────────────────
 
 class TestPortfolioSimulation:
     def test_portfolio_simulate_200(self, client):

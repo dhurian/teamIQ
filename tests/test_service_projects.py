@@ -7,7 +7,7 @@ from models import new_phase, seed_projects, seed_org
 from services import project_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _two_projects():
     return [
@@ -27,7 +27,7 @@ def _state(projects=None, org=None):
     }
 
 
-# ── normalize_projects ────────────────────────────────────────────────────────
+# ── SECTION: normalize_projects ──────────────────────────────────────────────
 
 class TestNormalizeProjects:
     def test_non_list_returns_seed(self):
@@ -73,7 +73,7 @@ class TestNormalizeProjects:
         assert ph["value"] == 5   # must NOT overwrite with weeks
 
 
-# ── create_project ────────────────────────────────────────────────────────────
+# ── SECTION: create_project ──────────────────────────────────────────────────
 
 class TestCreateProject:
     def test_defaults(self):
@@ -100,7 +100,7 @@ class TestCreateProject:
         assert proj["teams"][0]["id"] == proj["selTeamId"]
 
 
-# ── update_project ────────────────────────────────────────────────────────────
+# ── SECTION: update_project ──────────────────────────────────────────────────
 
 class TestUpdateProject:
     def test_updates_allowed_fields(self):
@@ -120,7 +120,7 @@ class TestUpdateProject:
         assert result is proj
 
 
-# ── delete_project ────────────────────────────────────────────────────────────
+# ── SECTION: delete_project ──────────────────────────────────────────────────
 
 class TestDeleteProject:
     def test_removes_project(self):
@@ -150,7 +150,7 @@ class TestDeleteProject:
             project_service.delete_project(projects, "proj_a", "proj_a")
 
 
-# ── build_export ──────────────────────────────────────────────────────────────
+# ── SECTION: build_export ────────────────────────────────────────────────────
 
 class TestBuildExport:
     def test_structure(self):
@@ -162,7 +162,7 @@ class TestBuildExport:
         assert result["globalOrg"] is state["globalOrg"]
 
 
-# ── apply_import ──────────────────────────────────────────────────────────────
+# ── SECTION: apply_import ────────────────────────────────────────────────────
 
 class TestApplyImport:
     def test_merges_new_projects(self):

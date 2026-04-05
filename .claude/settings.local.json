@@ -55,7 +55,24 @@
       "Bash(grep -h \"^def \" /Users/dhurianvitoldas/Documents/Development/teamiq/services/*.py)",
       "Bash(ls /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/panel_timeline*.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_events.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_layout.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_svg.js)",
       "Bash(wc -l /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/panel_timeline*.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_events.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_layout.js /Users/dhurianvitoldas/Documents/Development/teamiq/static/js/timeline_svg.js)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//Users/dhurianvitoldas/Documents/Development/teamiq/**)",
+      "Bash(done)",
+      "Bash(head -20 echo \"---\" grep -n \"seed_org\\\\|seed_projects\\\\|SEED\\\\|sample\" /Users/dhurianvitoldas/Documents/Development/teamiq/models.py)",
+      "Bash(do echo:*)",
+      "Bash(python -m pytest tests/test_api_teams.py tests/test_api_workpackages.py -q --tb=short)",
+      "Bash(python3 -m pytest tests/test_api_teams.py tests/test_api_workpackages.py -q --tb=short)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -m pytest -q --tb=short)",
+      "Bash(python -m pytest tests/ -q)",
+      "Bash(python3 -m pytest tests/ -q)",
+      "Bash(pip3 install:*)",
+      "Bash(pytest tests/ -q)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

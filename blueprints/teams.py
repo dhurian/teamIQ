@@ -14,7 +14,7 @@ from services import team_service
 bp = Blueprint("teams", __name__)
 
 
-# ── Teams ─────────────────────────────────────────────────────────────────────
+# ── SECTION: teams (POST /teams, PATCH /teams/<tid>, DELETE /teams/<tid>) ─────
 
 @bp.route("/api/projects/<pid>/teams", methods=["POST"])
 def api_add_team(pid):
@@ -53,7 +53,7 @@ def api_delete_team(pid, tid):
     return ok()
 
 
-# ── Members ───────────────────────────────────────────────────────────────────
+# ── SECTION: members (POST /members, PATCH /members/<mid>, DELETE, move, unlink, import-org) ──
 
 @bp.route("/api/projects/<pid>/teams/<tid>/members", methods=["POST"])
 def api_add_member(pid, tid):
@@ -132,7 +132,7 @@ def api_import_org(pid):
     return ok({"added": added})
 
 
-# ── Connections ───────────────────────────────────────────────────────────────
+# ── SECTION: connections (POST /connections, PATCH /connections/<cid>, DELETE) ─
 
 @bp.route("/api/projects/<pid>/connections", methods=["POST"])
 def api_add_connection(pid):

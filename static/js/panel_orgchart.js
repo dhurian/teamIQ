@@ -1,11 +1,18 @@
 // ════════════════════════════════════════════════════════════════════════════
-// ORG CHART (per-project team connections)
+// ORG CHART (per-project team connections — SVG canvas + connection list)
 // ════════════════════════════════════════════════════════════════════════════
+
+// ── SECTION: main render (renderOrgChart) ─────────────────────────────────────
 function renderOrgChart(){
   const proj=ap();if(!proj)return;
   const{teams,connections}=proj;
   const orgMode=proj.orgMode||'none';
-  const connTypes=[{val:'integration',label:'Integration',col:'#4a9eff'},{val:'dependency',label:'Dependency',col:'#f0a030'},{val:'handoff',label:'Handoff',col:'#1fb885'},{val:'reporting',label:'Reporting',col:'#9b7ee8'}];
+  const connTypes=[
+    {val:'integration', label:'Integration', col:C.blue},
+    {val:'dependency',  label:'Dependency',  col:C.amber},
+    {val:'handoff',     label:'Handoff',     col:C.teal},
+    {val:'reporting',   label:'Reporting',   col:C.purple},
+  ];
   const orgLookup={};flatPersons(S.globalOrg||{}).forEach(p=>{orgLookup[p.id]=p;});
   const resolveName=m=>m.orgId?orgLookup[m.orgId]?.name||'?':m.name||'?';
 
@@ -17,18 +24,18 @@ function renderOrgChart(){
     const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
     const nx=-dy/len*20,ny=dx/len*20;
     edges+=`<path d="M${x1},${y1} Q${mx+nx},${my+ny} ${x2},${y2}" stroke="${col}" stroke-width="2" fill="none" marker-end="url(#arr-${c.type})" stroke-dasharray="${c.type==='dependency'?'6,3':'none'}"/>
-      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="#161b27" stroke="${col}" stroke-width="1" opacity=".92" style="cursor:pointer;" onclick="editConnLabel('${proj.id}','${c.id}')"/>
+      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="var(--bg2)" stroke="${col}" stroke-width="1" opacity=".92" style="cursor:pointer;" onclick="editConnLabel('${proj.id}','${c.id}')"/>
       <text x="${mx+nx}" y="${my+ny+4}" text-anchor="middle" fill="${col}" font-size="10" font-family="Segoe UI,system-ui" font-weight="600" style="cursor:pointer;" onclick="editConnLabel('${proj.id}','${c.id}')">${c.label||c.type}</text>`;
   });
   teams.forEach(t=>{
     const isSrc=orgConnFrom===t.id;
     const memberCount=t.members.length;
     nodes+=`<g class="proj-node" data-id="${t.id}" transform="translate(${t.x??30},${t.y??40})" cursor="${orgMode==='connecting'?'crosshair':'move'}" onclick="projNodeClick('${proj.id}','${t.id}')">
-      <rect width="${NODE_W}" height="${NODE_H}" rx="10" fill="#1e2535" stroke="${isSrc?t.color:t.color+'44'}" stroke-width="${isSrc?3:1.5}" ${isSrc?`filter="drop-shadow(0 0 8px ${t.color}88)"`:''}/>
+      <rect width="${NODE_W}" height="${NODE_H}" rx="10" fill="var(--bg3)" stroke="${isSrc?t.color:t.color+'44'}" stroke-width="${isSrc?3:1.5}" ${isSrc?`filter="drop-shadow(0 0 8px ${t.color}88)"`:''}/>
       <rect width="${NODE_W}" height="6" rx="10" fill="${t.color}"/>
       <text x="12" y="26" fill="${t.color}" font-size="12" font-weight="700" font-family="Segoe UI,system-ui">${t.name}</text>
-      <text x="12" y="42" fill="#8893a8" font-size="10" font-family="Segoe UI,system-ui">${memberCount} member${memberCount!==1?'s':''}</text>
-      <text x="12" y="82" fill="#4a556a" font-size="10" font-family="Segoe UI,system-ui">${t.members.slice(0,3).map(m=>ini(resolveName(m))).join(' · ')}${t.members.length>3?'…':''}</text>
+      <text x="12" y="42" fill="${C.muted}" font-size="10" font-family="Segoe UI,system-ui">${memberCount} member${memberCount!==1?'s':''}</text>
+      <text x="12" y="82" fill="${C.faint}" font-size="10" font-family="Segoe UI,system-ui">${t.members.slice(0,3).map(m=>ini(resolveName(m))).join(' · ')}${t.members.length>3?'…':''}</text>
     </g>`;
   });
 
@@ -51,6 +58,9 @@ function renderOrgChart(){
         style="width:100%;font-size:11px;background:var(--bg4);border:1px solid var(--border);color:var(--muted);border-radius:4px;padding:3px 7px;outline:none;">
     </div>`;}).join('');
 
+  const arrowDefs=['integration:'+C.blue,'dependency:'+C.amber,'handoff:'+C.teal,'reporting:'+C.purple]
+    .map(s=>{const[v,c]=s.split(':');return`<marker id="arr-${v}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${c}"/></marker>`;}).join('');
+
   document.getElementById('panelOrgchart').innerHTML=`
     <div class="flex-between mb15">
       <div><h2 style="margin:0 0 4px;">Team Interfaces</h2>
@@ -65,7 +75,7 @@ function renderOrgChart(){
       </div>
     </div>
     <svg id="orgSvg" width="100%" height="480" style="background:var(--bg3);border-radius:10px;border:1px solid var(--border);display:block;cursor:${orgMode==='connecting'?'crosshair':'grab'};margin-bottom:14px;">
-      <defs>${['integration:#4a9eff','dependency:#f0a030','handoff:#1fb885','reporting:#9b7ee8'].map(s=>{const[v,c]=s.split(':');return`<marker id="arr-${v}" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="${c}"/></marker>`;}).join('')}</defs>
+      <defs>${arrowDefs}</defs>
       <g id="orgViewport" transform="translate(${orgPan.x},${orgPan.y}) scale(${orgZoom})">
         <g>${edges}</g><g>${nodes}</g>
       </g>
@@ -91,6 +101,7 @@ function renderOrgChart(){
   initProjOrgEvents(proj.id);
 }
 
+// ── SECTION: connection utils (editConnLabel, patchConnection, transform) ─────
 function editConnLabel(pid,cid){
   const conn=ap()?.connections.find(c=>c.id===cid); if(!conn) return;
   const label=prompt('Edit connection label:',conn.label||'');
@@ -105,7 +116,7 @@ function orgUpdateTransform(){
   if(g) g.setAttribute('transform',`translate(${orgPan.x},${orgPan.y}) scale(${orgZoom})`);
 }
 
-// Window-level move/up for org chart — registered once so pan/drag survive leaving the SVG
+// ── SECTION: window-level mouse handlers (initOrgWindowEvents) ────────────────
 function initOrgWindowEvents(){
   if(orgEventsSetup)return;
   orgEventsSetup=true;
@@ -139,10 +150,10 @@ function initOrgWindowEvents(){
   });
 }
 
+// ── SECTION: SVG event setup — node drag, pan, zoom (initProjOrgEvents) ───────
 function initProjOrgEvents(pid){
   const svg=document.getElementById('orgSvg');if(!svg)return;
 
-  // Node drag — account for zoom/pan
   svg.querySelectorAll('.proj-node').forEach(el=>{
     el.addEventListener('mousedown',e=>{
       const proj=ap();if(proj?.orgMode==='connecting')return;
@@ -155,14 +166,12 @@ function initProjOrgEvents(pid){
     });
   });
 
-  // Background mousedown → pan
   svg.addEventListener('mousedown',e=>{
     if(e.target.closest('.proj-node')) return;
     orgPanning={sx:e.clientX-orgPan.x,sy:e.clientY-orgPan.y};
     svg.style.cursor='grabbing';
   });
 
-  // Scroll to zoom
   svg.addEventListener('wheel',e=>{
     e.preventDefault();
     const delta=e.deltaY>0?-0.1:0.1;
@@ -173,26 +182,23 @@ function initProjOrgEvents(pid){
   initOrgWindowEvents();
 }
 
-// Lightweight redraw during node drag — no full DOM rebuild
+// ── SECTION: lightweight redraw during node drag (_redrawOrgChart) ────────────
 function _redrawOrgChart(proj){
   const{teams,connections}=proj;
-  // Reposition nodes
   document.querySelectorAll('.proj-node').forEach(el=>{
     const t=teams.find(t=>t.id===el.dataset.id);if(!t)return;
     el.setAttribute('transform',`translate(${t.x??30},${t.y??40})`);
   });
-  // Redraw edges
   const edgesG=document.querySelector('#orgViewport g');if(!edgesG)return;
-  const tCol2=t=>({integration:'#4a9eff',dependency:'#f0a030',handoff:'#1fb885',reporting:'#9b7ee8'})[t]||'#4a9eff';
   edgesG.innerHTML=connections.map(c=>{
     const ft=teams.find(t=>t.id===c.from),tt=teams.find(t=>t.id===c.to);if(!ft||!tt)return'';
-    const col=tCol2(c.type);
+    const col=tCol(c.type);
     const x1=(ft.x??30)+NODE_W/2,y1=(ft.y??40)+NODE_H/2;
     const x2=(tt.x??30)+NODE_W/2,y2=(tt.y??40)+NODE_H/2;
     const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy)||1;
     const nx=-dy/len*20,ny=dx/len*20;
     return`<path d="M${x1},${y1} Q${mx+nx},${my+ny} ${x2},${y2}" stroke="${col}" stroke-width="2" fill="none" marker-end="url(#arr-${c.type})" stroke-dasharray="${c.type==='dependency'?'6,3':'none'}"/>
-      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="#161b27" stroke="${col}" stroke-width="1" opacity=".92"/>
+      <rect x="${mx+nx-36}" y="${my+ny-11}" width="72" height="20" rx="4" fill="var(--bg2)" stroke="${col}" stroke-width="1" opacity=".92"/>
       <text x="${mx+nx}" y="${my+ny+4}" text-anchor="middle" fill="${col}" font-size="10" font-family="Segoe UI,system-ui" font-weight="600">${c.label||c.type}</text>`;
   }).join('');
 }

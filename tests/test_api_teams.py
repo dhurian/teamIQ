@@ -4,23 +4,8 @@ test_api_teams.py – integration tests for teams and members.
 import pytest
 
 
-@pytest.fixture()
-def second_team_id(client, proj_id):
-    """Add a second team and return its id."""
-    r = client.post(f"/api/projects/{proj_id}/teams",
-                    json={"name": "Team Beta", "color": "#ff0000"})
-    assert r.status_code == 200
-    return r.get_json()["team"]["id"]
-
-
-@pytest.fixture()
-def member_id(client, proj_id, team_id):
-    """Add a member to team_id and return member id."""
-    r = client.post(f"/api/projects/{proj_id}/teams/{team_id}/members",
-                    json={"name": "Test Person", "role": "Dev"})
-    assert r.status_code == 200
-    return r.get_json()["member"]["id"]
-
+# ── SECTION: TestAddTeam ──────────────────────────────────────────────────────
+# Fixtures: second_team_id, member_id, wp_id, conn_id  →  defined in conftest.py
 
 class TestAddTeam:
     def test_add_team_ok(self, client, proj_id):
@@ -44,6 +29,7 @@ class TestAddTeam:
         assert r.status_code == 404
 
 
+# ── SECTION: TestUpdateTeam ───────────────────────────────────────────────────
 class TestUpdateTeam:
     def test_patch_team_name(self, client, proj_id, team_id):
         r = client.patch(f"/api/projects/{proj_id}/teams/{team_id}",
@@ -76,6 +62,7 @@ class TestUpdateTeam:
         assert r.status_code == 404
 
 
+# ── SECTION: TestDeleteTeam ───────────────────────────────────────────────────
 class TestDeleteTeam:
     def test_cannot_delete_last_team(self, client, proj_id):
         # Get all current teams and delete all but one
@@ -114,6 +101,7 @@ class TestDeleteTeam:
         )
 
 
+# ── SECTION: TestAddMember ────────────────────────────────────────────────────
 class TestAddMember:
     def test_add_member_ok(self, client, proj_id, team_id):
         r = client.post(f"/api/projects/{proj_id}/teams/{team_id}/members",
@@ -144,6 +132,7 @@ class TestAddMember:
         assert r.status_code == 404
 
 
+# ── SECTION: TestUpdateMember ─────────────────────────────────────────────────
 class TestUpdateMember:
     def test_patch_member_name(self, client, proj_id, member_id):
         r = client.patch(f"/api/projects/{proj_id}/members/{member_id}",
@@ -168,6 +157,7 @@ class TestUpdateMember:
         assert r.status_code == 404
 
 
+# ── SECTION: TestDeleteMember ─────────────────────────────────────────────────
 class TestDeleteMember:
     def test_delete_member_ok(self, client, proj_id, member_id):
         r = client.delete(f"/api/projects/{proj_id}/members/{member_id}")
@@ -185,6 +175,7 @@ class TestDeleteMember:
         assert r.status_code == 404
 
 
+# ── SECTION: TestMoveMember ───────────────────────────────────────────────────
 class TestMoveMember:
     def test_move_member_to_other_team(self, client, proj_id, team_id,
                                        second_team_id, member_id):
@@ -204,6 +195,7 @@ class TestMoveMember:
         assert r.status_code == 404
 
 
+# ── SECTION: TestConnections ──────────────────────────────────────────────────
 class TestConnections:
     def test_add_connection_ok(self, client, proj_id, team_id, second_team_id):
         r = client.post(f"/api/projects/{proj_id}/connections",

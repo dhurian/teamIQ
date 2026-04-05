@@ -11,7 +11,7 @@ function buildPhaseDiagram(proj, svgH=520){
   phaseEdges.forEach(e=>{
     const f=phMap[e.from], t=phMap[e.to]; if(!f||!t) return;
     const x1=f.x+PH_W/2, y1=f.y+PH_H, x2=t.x+PH_W/2, y2=t.y, my=(y1+y2)/2;
-    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||'#4a9eff';
+    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||C.blue;
     edgesSvg+=`<g class="ph-edge"><path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}"
       stroke="${col}" stroke-width="2" fill="none" marker-end="url(#pharr)"
       style="cursor:pointer;" onclick="delPhaseEdge('${proj.id}','${e.id}')"/>
@@ -38,24 +38,24 @@ function buildPhaseDiagram(proj, svgH=520){
       <rect width="${PH_W}" height="5" rx="8" fill="${col}"/>
       <rect width="${PH_W}" y="2" height="3" fill="${col}"/>
       <text x="12" y="24" fill="${col}" font-size="11" font-weight="700" font-family="Segoe UI,system-ui">${ph.name.length>22?ph.name.slice(0,21)+'…':ph.name}</text>
-      <text x="12" y="40" fill="#8893a8" font-size="10" font-family="Segoe UI,system-ui">${dur}${reqStr?' · '+reqStr:''}</text>
-      ${subCount?`<rect x="12" y="50" width="${28+subCount*4}" height="14" rx="3" fill="#4a9eff22"/>
-        <text x="16" y="61" fill="#4a9eff" font-size="9" font-family="Segoe UI,system-ui">⊟ ${subCount} sub</text>`:''}
-      ${wpCount?`<rect x="${subCount?48+subCount*4:12}" y="50" width="${24+wpCount*4}" height="14" rx="3" fill="#1fb88522"/>
-        <text x="${subCount?52+subCount*4:16}" y="61" fill="#1fb885" font-size="9" font-family="Segoe UI,system-ui">📦 ${wpCount}</text>`:''}
+      <text x="12" y="40" fill="${C.muted}" font-size="10" font-family="Segoe UI,system-ui">${dur}${reqStr?' · '+reqStr:''}</text>
+      ${subCount?`<rect x="12" y="50" width="${28+subCount*4}" height="14" rx="3" fill="${C.blue}22"/>
+        <text x="16" y="61" fill="${C.blue}" font-size="9" font-family="Segoe UI,system-ui">⊟ ${subCount} sub</text>`:''}
+      ${wpCount?`<rect x="${subCount?48+subCount*4:12}" y="50" width="${24+wpCount*4}" height="14" rx="3" fill="${C.teal}22"/>
+        <text x="${subCount?52+subCount*4:16}" y="61" fill="${C.teal}" font-size="9" font-family="Segoe UI,system-ui">📦 ${wpCount}</text>`:''}
       <text x="${PH_W-10}" y="${PH_H-10}" text-anchor="end" fill="${col}66" font-size="18" font-weight="700" font-family="Consolas,monospace">${pi+1}</text>
       ${isSel?`<g onclick="event.stopPropagation();delPhase('${proj.id}','${ph.id}')" transform="translate(${PH_W-18},6)" style="cursor:pointer;">
-        <circle r="8" fill="#e0505044" stroke="#e0505088"/>
-        <text x="0" y="4" text-anchor="middle" fill="#e05050" font-size="10">✕</text></g>`:''}
+        <circle r="8" fill="${C.red}44" stroke="${C.red}88"/>
+        <text x="0" y="4" text-anchor="middle" fill="${C.red}" font-size="10">✕</text></g>`:''}
     </g>`;
   });
 
-  const ghostSvg=`<line id="phGhost" stroke="#4a9eff" stroke-width="2" stroke-dasharray="6,3" display="none" x1="0" y1="0" x2="0" y2="0"/>`;
+  const ghostSvg=`<line id="phGhost" stroke="${C.blue}" stroke-width="2" stroke-dasharray="6,3" display="none" x1="0" y1="0" x2="0" y2="0"/>`;
 
   return`<svg id="phDiagSvg" width="100%" height="${svgH}"
        style="display:block;background:var(--bg3);cursor:${pdMode==='connecting'?'crosshair':'grab'}">
     <defs><marker id="pharr" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
-      <polygon points="0 0,8 3,0 6" fill="#4a9eff88"/></marker></defs>
+      <polygon points="0 0,8 3,0 6" fill="${C.blue}88"/></marker></defs>
     <g id="phDiagG" transform="translate(${pdPan.x},${pdPan.y}) scale(${pdZoom})">
       <g id="phEdgesG">${edgesSvg}</g>
       <g id="phNodesG">${nodesSvg}</g>
@@ -147,7 +147,7 @@ function _redrawPhaseDiagram(proj){
   phaseEdges.forEach(e=>{
     const f=phMap[e.from],t=phMap[e.to]; if(!f||!t) return;
     const x1=_phX(f,0)+PH_W/2, y1=_phY(f,0)+PH_H, x2=_phX(t,0)+PH_W/2, y2=_phY(t,0), my=(y1+y2)/2;
-    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||'#4a9eff';
+    const col=PCOLS[phases.findIndex(p=>p.id===e.from)%4]||C.blue;
     const path=document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d',`M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
     path.setAttribute('stroke',col); path.setAttribute('stroke-width','2');

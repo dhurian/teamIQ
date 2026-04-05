@@ -13,7 +13,7 @@ from services import phase_service
 bp = Blueprint("phases", __name__)
 
 
-# ── Top-level phases ──────────────────────────────────────────────────────────
+# ── SECTION: top-level phases (POST /phases, PATCH /phases/<phid>, DELETE, move) ──
 
 @bp.route("/api/projects/<pid>/phases", methods=["POST"])
 def api_add_phase(pid):
@@ -63,7 +63,7 @@ def api_move_phase(pid, phid):
     return ok({"phases": phases})
 
 
-# ── Subphases ─────────────────────────────────────────────────────────────────
+# ── SECTION: subphases (POST /phases/<phid>/children) ────────────────────────
 
 @bp.route("/api/projects/<pid>/phases/<phid>/children", methods=["POST"])
 def api_add_subphase(pid, phid):
@@ -78,7 +78,7 @@ def api_add_subphase(pid, phid):
     return ok({"phase": child})
 
 
-# ── Phase dependency edges ────────────────────────────────────────────────────
+# ── SECTION: phase dependency edges (POST /phase-edges, DELETE /phase-edges/<eid>) ──
 
 @bp.route("/api/projects/<pid>/phase-edges", methods=["POST"])
 def api_add_phase_edge(pid):

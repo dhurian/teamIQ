@@ -4,6 +4,8 @@ test_api_projects.py – integration tests for project-level API endpoints.
 import pytest
 
 
+# ── SECTION: TestState ───────────────────────────────────────────────────────
+
 class TestState:
     def test_get_state_200(self, client):
         r = client.get("/api/state")
@@ -29,12 +31,16 @@ class TestState:
         assert data["globalOrg"]["type"] == "org"
 
 
+# ── SECTION: TestGetProjects ─────────────────────────────────────────────────
+
 class TestGetProjects:
     def test_get_projects_200(self, client):
         r = client.get("/api/projects")
         assert r.status_code == 200
         assert isinstance(r.get_json(), list)
 
+
+# ── SECTION: TestAddProject ──────────────────────────────────────────────────
 
 class TestAddProject:
     def test_add_project_201_ok(self, client):
@@ -72,6 +78,8 @@ class TestAddProject:
         assert len(proj["phases"]) >= 1
 
 
+# ── SECTION: TestUpdateProject ───────────────────────────────────────────────
+
 class TestUpdateProject:
     def test_patch_name(self, client, proj_id):
         r = client.patch(f"/api/projects/{proj_id}", json={"name": "Renamed"})
@@ -96,6 +104,8 @@ class TestUpdateProject:
         proj = next(p for p in state["projects"] if p["id"] == proj_id)
         assert proj["name"] == "Persisted"
 
+
+# ── SECTION: TestDeleteProject ───────────────────────────────────────────────
 
 class TestDeleteProject:
     def test_cannot_delete_last_project(self, client, proj_id):
@@ -122,6 +132,8 @@ class TestDeleteProject:
         assert r.status_code == 404
 
 
+# ── SECTION: TestSetActiveProject ────────────────────────────────────────────
+
 class TestSetActiveProject:
     def test_set_active_valid(self, client):
         state = client.get("/api/state").get_json()
@@ -142,6 +154,8 @@ class TestSetActiveProject:
         new_state = client.get("/api/state").get_json()
         assert new_state["activeProjectId"] == other["id"]
 
+
+# ── SECTION: TestErrorHandlers ───────────────────────────────────────────────
 
 class TestErrorHandlers:
     def test_404_returns_json(self, client):

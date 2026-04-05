@@ -7,7 +7,7 @@ from models import new_phase
 from services import work_package_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _proj_with_phase():
     ph = new_phase("Phase 1", 2, "weeks", 60, 60)
@@ -17,7 +17,7 @@ def _proj_with_phase():
     }, ph
 
 
-# ── create_wp ─────────────────────────────────────────────────────────────────
+# ── SECTION: create_wp ───────────────────────────────────────────────────────
 
 class TestCreateWp:
     def test_adds_to_phase(self):
@@ -46,7 +46,7 @@ class TestCreateWp:
             work_package_service.create_wp(proj, "ph_missing", {})
 
 
-# ── update_wp ─────────────────────────────────────────────────────────────────
+# ── SECTION: update_wp ───────────────────────────────────────────────────────
 
 class TestUpdateWp:
     def test_updates_fields(self):
@@ -76,7 +76,7 @@ class TestUpdateWp:
         assert wp["endDateOverride"]   == "2025-07-01"
 
 
-# ── delete_wp ─────────────────────────────────────────────────────────────────
+# ── SECTION: delete_wp ───────────────────────────────────────────────────────
 
 class TestDeleteWp:
     def test_removes_wp(self):
@@ -99,7 +99,7 @@ class TestDeleteWp:
         assert sub["workPackages"] == []
 
 
-# ── move_wp ───────────────────────────────────────────────────────────────────
+# ── SECTION: move_wp ─────────────────────────────────────────────────────────
 
 class TestMoveWp:
     def test_moves_down(self):

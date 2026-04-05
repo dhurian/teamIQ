@@ -48,7 +48,7 @@ function renderBizCase(){
                   style="accent-color:var(--teal);width:14px;height:14px;cursor:pointer;flex-shrink:0;">
                 <label for="bcwp_${wp.id}" style="cursor:pointer;margin-left:8px;">
                   <div style="font-size:12px;font-weight:600;">${wp.name}</div>
-                  <div style="font-size:10px;color:var(--faint);">${wp.phaseName}</div>
+                  <div class="label-xs">${wp.phaseName}</div>
                 </label>
               </div>`).join('')}
         </div>

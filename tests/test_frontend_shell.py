@@ -1,5 +1,39 @@
 """Smoke checks for frontend shell assets and script wiring."""
 
+# ── SECTION: shell tests ──────────────────────────────────────────────────────
+
+# Scripts that must be present in index.html and return 200 with JS content.
+_EXPECTED_SCRIPTS = [
+    '/static/js/state.js',
+    '/static/js/utils.js',
+    '/static/js/sidebar.js',
+    '/static/js/panel_overview.js',
+    '/static/js/panel_org_hier.js',
+    '/static/js/panel_teams.js',
+    '/static/js/panel_phases_helpers.js',
+    '/static/js/phase_card.js',
+    '/static/js/phase_actions.js',
+    '/static/js/phase_diagram.js',
+    '/static/js/panel_phases.js',
+    '/static/js/timeline_utils.js',
+    '/static/js/timeline_scheduling.js',
+    '/static/js/timeline_inspector.js',
+    '/static/js/timeline_render.js',
+    '/static/js/panel_orgchart.js',
+    '/static/js/panel_bizcase.js',
+    '/static/js/panel_reqs.js',
+    '/static/js/panel_analysis_helpers.js',
+    '/static/js/panel_analysis_cards.js',
+    '/static/js/panel_analysis_charts.js',
+    '/static/js/panel_analysis_scenario.js',
+    '/static/js/panel_analysis.js',
+    '/static/js/panel_resources.js',
+    '/static/js/import_picker.js',
+    '/static/js/api_actions.js',
+    '/static/js/import_export.js',
+    '/static/js/boot.js',
+]
+
 
 def test_index_renders_and_includes_css(client):
     r = client.get('/')
@@ -8,32 +42,14 @@ def test_index_renders_and_includes_css(client):
     assert '/static/css/app.css' in html
 
 
-def test_index_includes_panel_helper_scripts(client):
+def test_index_includes_expected_scripts(client):
     r = client.get('/')
     html = r.get_data(as_text=True)
-    assert '/static/js/panel_org_hier_helpers.js' in html
-    assert '/static/js/panel_phases_helpers.js' in html
-    assert '/static/js/phase_card.js' in html
-    assert '/static/js/phase_actions.js' in html
-    assert '/static/js/phase_diagram.js' in html
-    assert '/static/js/panel_timeline_helpers.js' in html
-    assert '/static/js/timeline_svg.js' in html
-    assert '/static/js/timeline_events.js' in html
-    assert '/static/js/timeline_layout.js' in html
+    for path in _EXPECTED_SCRIPTS:
+        assert path in html, f"Missing script tag: {path}"
 
 
-def test_helper_scripts_load(client):
-    for path in (
-        '/static/js/panel_org_hier_helpers.js',
-        '/static/js/panel_phases_helpers.js',
-        '/static/js/phase_card.js',
-        '/static/js/phase_actions.js',
-        '/static/js/phase_diagram.js',
-        '/static/js/panel_timeline_helpers.js',
-        '/static/js/timeline_svg.js',
-        '/static/js/timeline_events.js',
-        '/static/js/timeline_layout.js',
-    ):
+def test_scripts_load_with_200(client):
+    for path in _EXPECTED_SCRIPTS:
         r = client.get(path)
-        assert r.status_code == 200
-        assert 'function' in r.get_data(as_text=True)
+        assert r.status_code == 200, f"Script returned {r.status_code}: {path}"

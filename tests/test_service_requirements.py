@@ -6,13 +6,13 @@ import pytest
 from services import requirement_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _proj():
     return {"id": "proj_t", "requirements": []}
 
 
-# ── create_requirement ────────────────────────────────────────────────────────
+# ── SECTION: create_requirement ──────────────────────────────────────────────
 
 class TestCreateRequirement:
     def test_appends_to_project(self):
@@ -43,7 +43,7 @@ class TestCreateRequirement:
         assert req in proj["requirements"]
 
 
-# ── update_requirement ────────────────────────────────────────────────────────
+# ── SECTION: update_requirement ──────────────────────────────────────────────
 
 class TestUpdateRequirement:
     def test_updates_text(self):
@@ -65,7 +65,7 @@ class TestUpdateRequirement:
             requirement_service.update_requirement(proj, "req_missing", {})
 
 
-# ── delete_requirement ────────────────────────────────────────────────────────
+# ── SECTION: delete_requirement ──────────────────────────────────────────────
 
 class TestDeleteRequirement:
     def test_removes_requirement(self):

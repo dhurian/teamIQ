@@ -7,7 +7,7 @@ from models import seed_org, new_phase
 from services import org_service
 
 
-# ── Fixtures ──────────────────────────────────────────────────────────────────
+# ── SECTION: fixtures ────────────────────────────────────────────────────────
 
 def _org():
     """Minimal org: root → division → department → team → person."""
@@ -38,7 +38,7 @@ def _projects_with_member(org_id="p1"):
     }]
 
 
-# ── create_org_node ───────────────────────────────────────────────────────────
+# ── SECTION: create_org_node ─────────────────────────────────────────────────
 
 class TestCreateOrgNode:
     def test_adds_child_to_division(self):
@@ -74,7 +74,7 @@ class TestCreateOrgNode:
             org_service.create_org_node(org, {"parentId": "p1"})
 
 
-# ── update_org_node ───────────────────────────────────────────────────────────
+# ── SECTION: update_org_node ─────────────────────────────────────────────────
 
 class TestUpdateOrgNode:
     def test_updates_name(self):
@@ -99,7 +99,7 @@ class TestUpdateOrgNode:
             org_service.update_org_node(org, "n_missing", {"name": "X"})
 
 
-# ── delete_org_node ───────────────────────────────────────────────────────────
+# ── SECTION: delete_org_node ─────────────────────────────────────────────────
 
 class TestDeleteOrgNode:
     def test_removes_node(self):
@@ -140,7 +140,7 @@ class TestDeleteOrgNode:
         assert "p1" in removed
 
 
-# ── toggle_org_node ───────────────────────────────────────────────────────────
+# ── SECTION: toggle_org_node ─────────────────────────────────────────────────
 
 class TestToggleOrgNode:
     def test_toggles_to_false(self):

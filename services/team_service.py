@@ -8,7 +8,7 @@ import copy
 from models import uid, default_skills, build_org_lookup
 
 
-# ── Teams ─────────────────────────────────────────────────────────────────────
+# ── SECTION: teams (create_team, update_team, delete_team) ───────────────────
 
 def create_team(proj: dict, data: dict) -> dict:
     """Append a new team to *proj* and return it. Also sets selTeamId."""
@@ -52,13 +52,13 @@ def delete_team(proj: dict, tid: str) -> None:
         proj["selTeamId"] = proj["teams"][0]["id"] if proj["teams"] else None
 
 
-# ── Members ───────────────────────────────────────────────────────────────────
+# ── SECTION: members (create_member, update_member, delete_member, move_member, unlink_member, import_org_members) ──
 
 def create_member(proj: dict, tid: str, data: dict) -> dict:
     """Add a member to team *tid*. Returns the new member dict."""
     team = _find_team(proj, tid)
     mid  = "m_" + uid()
-    member = {"id": mid}
+    member = {"id": mid, "allocation": int(data.get("allocation", 100))}
     if data.get("orgId"):
         member["orgId"] = data["orgId"]
     else:
@@ -78,6 +78,8 @@ def update_member(proj: dict, mid: str, data: dict) -> dict:
             for f in ("name", "role"):
                 if f in data:
                     member[f] = data[f]
+            if "allocation" in data:
+                member["allocation"] = max(0, min(200, int(data["allocation"])))
             if "skills" in data:
                 member["skills"] = data["skills"]
             if "skill" in data:
@@ -157,7 +159,7 @@ def import_org_members(proj: dict, tid: str, org_ids: list, global_org: dict) ->
     return added
 
 
-# ── Connections ───────────────────────────────────────────────────────────────
+# ── SECTION: connections (add_connection, update_connection, delete_connection) ─
 
 def add_connection(proj: dict, data: dict) -> dict:
     """
@@ -195,7 +197,7 @@ def delete_connection(proj: dict, cid: str) -> None:
     proj["connections"] = [c for c in proj.get("connections", []) if c["id"] != cid]
 
 
-# ── Internal helpers ──────────────────────────────────────────────────────────
+# ── SECTION: internal helpers (_find_team) ────────────────────────────────────
 
 def _find_team(proj: dict, tid: str) -> dict:
     team = next((t for t in proj["teams"] if t["id"] == tid), None)

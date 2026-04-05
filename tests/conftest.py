@@ -101,3 +101,43 @@ def project_state(state_data):
         data = state_data()
         return next(p for p in data["projects"] if p["id"] == project_id)
     return _get_project
+
+
+# ── Shared resource-creation fixtures ────────────────────────────────────────
+# These eliminate per-file @pytest.fixture boilerplate for common resources.
+
+@pytest.fixture()
+def second_team_id(client, proj_id):
+    """Add a second team and return its id."""
+    r = client.post(f"/api/projects/{proj_id}/teams",
+                    json={"name": "Team Beta", "color": "#ff0000"})
+    assert r.status_code == 200
+    return r.get_json()["team"]["id"]
+
+
+@pytest.fixture()
+def member_id(client, proj_id, team_id):
+    """Add a standalone member to team_id and return its id."""
+    r = client.post(f"/api/projects/{proj_id}/teams/{team_id}/members",
+                    json={"name": "Test Person", "role": "Dev"})
+    assert r.status_code == 200
+    return r.get_json()["member"]["id"]
+
+
+@pytest.fixture()
+def wp_id(client, proj_id, phase_id):
+    """Create a work package in the first phase and return its id."""
+    r = client.post(f"/api/projects/{proj_id}/phases/{phase_id}/work-packages",
+                    json={"name": "Test WP"})
+    assert r.status_code == 200
+    return r.get_json()["workPackage"]["id"]
+
+
+@pytest.fixture()
+def conn_id(client, proj_id, team_id, second_team_id):
+    """Create a connection between team_id and second_team_id and return its id."""
+    r = client.post(f"/api/projects/{proj_id}/connections",
+                    json={"from": team_id, "to": second_team_id,
+                          "type": "integration", "label": "Test"})
+    assert r.status_code == 200
+    return r.get_json()["connection"]["id"]

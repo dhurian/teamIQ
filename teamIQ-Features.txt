@@ -1,0 +1,135 @@
+In the teams panel, create a summary of who is working in the project, their allocation, based on the people working in the project create a summary of the total project skill set.
+
+Allow to see the current project allocation with a percentage number instead of being just a slider.
+
+In the global resource allocation I am not able to change their allocation. It is always set at 100%. Also when I try to change it the screen jumps to the top in a systematic manner.
+This happens also when I add people from the organization and change their allocation. Everyone defaults to 100% allocation.
+
+In the teams panel When I see a team member I can't unselect them. I always see their profile. Or other colleague I select. I want to be able to save, cancel changes or undo changes up to 10 changes in the past.
+
+
+In the phases panel, Allow to add subphases to workpackages in the same way a subphase can have workpackages.
+For the workpackages allow to select the requirements needed to develop that workpackages. 
+
+The skills for the subphases and workpackages can be inherited from the parent phase, parent workpackage or parent subphase. If the workpackage then needs more skills then those should be updated on the parent phase, parent subphase or parent workpackage.
+
+Allow to add, remove and edit resources for each subphase, phase and workpackage.
+
+When I drag to left or right the window sizer in the phases panel the wording with the skills required gets messy. Find a smarter way to have it always aligned in one, two or three columns
+
+Under the phases panel, allow to connect or disconnect phases but also subphases, or workpakages. The phases and workpackages names should be possible to have their own box connected to the parent phase, workpackage or subphase.
+When I select one of those boxes I want to be the phase cards to show that box content immediately.
+
+The connections made in the phase diagram should automatically update the timeline of the project with its connections utilising the correct predecessors.
+
+Allow to create new Skills on the go. I can have an admin item that allows me to create. delete and edit skills that are project specific or global. pre-populate the skills page with the current skills defined. 
+
+in the Timeline panel, allow to have more than one predecessors for phases, subphases and workpackages. Changes here must update the phase diagram in the phases panel. 
+create a toggle to be able to see arrows connecting the different phases, subphases and workpackages.
+Create a new entity under the timeline which are called tasks. We should be able to add team members to those tasks. 
+The task should have a definition of available skills based on the closest parent of that task.
+
+
+In the org chart panel, I want to be able to delete connections in the layout.
+The team interfaces should be based on the different connections done in the phases. This information should easily come via the team members of each team associated with each task. 
+
+
+
+create logic to allow to move the different panel items order under a project.
+
+In the project list add the possibility to edit its name.
+
+
+Be able to import requirements from a pre-defined template and also be able to export the requirements utilising the same requirement template defined.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+🔗 5. Strengthen Connections (System Thinking)
+You have:
+team connections
+org structure
+Take it further:
+show critical dependency chains
+highlight:
+“if this team fails → 3 phases fail”
+
+💼 6. Make Business Case Actionable
+Right now you're planning:
+business case → requirements → work packages
+Make it powerful by adding:
+ROI calculation
+cost vs benefit over time
+link simulation to business value
+Example:
+“This project has 60% success but high ROI → acceptable risk”
+
+
+
+📤 8. Make It Shareable
+Right now it's single-user.
+Add:
+export report (PDF / summary)
+share link (later: multi-user)
+
+⚡ 9. Performance + Architecture Upgrade (Important soon)
+Your current model:
+db_set("projects", projects)
+This will break when:
+projects grow
+many users
+Improve:
+split into tables:
+projects
+phases
+work_packages
+lazy loading
+cache simulation results
+
+
+🎨 10. UX Improvements (Big Impact, Low Effort)
+Add:
+keyboard shortcuts
+drag & drop everywhere
+inline editing (less forms)
+undo/redo
+Fix:
+spinner issue (you noticed 👍)
+loading states everywhere
+
+
+🧠 11. Add Intelligence Layer (Future)
+Later, you can add:
+AI assistant:
+“Why is my project risky?”
+“How do I improve success rate?”
+
+🚀 If I Had to Prioritize (Do This Order)
+Phase 1 (biggest impact)
+✅ Work packages
+✅ Scenario comparison
+✅ Recommendations (insights)
+Phase 2
+Timeline / Gantt
+Resource allocation view
+Phase 3
+Business case + requirements
+Org chart improvements
+
+
+ 
